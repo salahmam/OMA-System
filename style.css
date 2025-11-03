@@ -1,0 +1,83 @@
+/* التصميم العام */
+body {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(180deg, #ffffff, #f7f9fb);
+    color: #1a1a1a;
+    margin: 0;
+    direction: rtl;
+}
+
+/* الرأس */
+header {
+    background-color: #004aad; /* أزرق غامق */
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 26px;
+}
+
+nav {
+    margin-top: 10px;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 12px;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+nav a:hover {
+    color: #ffcc33; /* ذهبي */
+}
+
+/* القسم الرئيسي */
+.intro {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #e6f0ff, #ffffff);
+}
+
+.intro h2 {
+    font-size: 28px;
+    color: #004aad;
+}
+
+.intro p {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 25px;
+}
+
+.intro button {
+    background-color: #004aad;
+    color: #fff;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.intro button:hover {
+    background-color: #ffcc33;
+    color: #004aad;
+}
+
+/* التذييل */
+footer {
+    background-color: #004aad;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    font-size: 14px;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}

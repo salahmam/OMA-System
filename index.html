@@ -1,33 +1,42 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام أوما - إدارة معهد تدريسي</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام أوما - إدارة معهد تدريسي</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="lang.js"></script>
 </head>
 <body>
-    <header>
-        <h1>مرحباً بك في نظام أوما</h1>
-        <nav>
-            <a href="#">الصفحة الرئيسية</a>
-            <a href="#">الطلاب</a>
-            <a href="#">الأساتذة</a>
-            <a href="#">التقارير</a>
-            <a href="#">اتصل بنا</a>
-        </nav>
-    </header>
+  <header>
+    <h1 data-welcome>مرحباً بك في نظام أوما</h1>
 
-    <main>
-        <section class="intro">
-            <h2>إدارة المصروفات والدروس بسهولة</h2>
-            <p>نظام شامل لإدارة الدروس، الحسابات، والطلاب والمعلمين في المعهد.</p>
-            <button>ابدأ الآن</button>
-        </section>
-    </main>
+    <nav>
+      <a href="#" data-home>الصفحة الرئيسية</a>
+      <a href="#" data-students>الطلاب</a>
+      <a href="#" data-teachers>الأساتذة</a>
+      <a href="#" data-reports>التقارير</a>
+      <a href="contact.html" data-contact>اتصل بنا</a>
+    </nav>
 
-    <footer>
-        <p>© 2025 نظام أوما - جميع الحقوق محفوظة</p>
-    </footer>
+    <!-- أزرار تغيير اللغة -->
+    <div class="lang-switcher">
+      <button onclick="changeLanguage('ar')">🇸🇦 العربية</button>
+      <button onclick="changeLanguage('ku')">🇹🇯 الكردية</button>
+      <button onclick="changeLanguage('en')">🇬🇧 English</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h2 data-intro-title>إدارة المصروفات والدروس بسهولة</h2>
+      <p data-intro-text>نظام شامل لإدارة الدروس، الحسابات، والطلاب والمعلمين في المعهد.</p>
+      <button data-start>ابدأ الآن</button>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 نظام أوما - جميع الحقوق محفوظة</p>
+  </footer>
 </body>
 </html>

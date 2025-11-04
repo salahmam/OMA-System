@@ -29,7 +29,7 @@ const db = getFirestore(app);
 onAuthStateChanged(auth, (user) => {
   if(user){
     document.getElementById('userEmail').innerText = user.email;
-    loadTeachers();
+    window.loadTeachers();
   } else {
     alert("يجب تسجيل الدخول أولاً");
     window.location.href = "login.html";
@@ -48,7 +48,7 @@ window.logout = async function(){
 };
 
 // تحميل وعرض الأساتذة
-async function loadTeachers(){
+window.loadTeachers = async function(){
   const teachersCol = collection(db, "teachers");
   const snapshot = await getDocs(teachersCol);
   const tbody = document.querySelector("#teachersTable tbody");
@@ -84,7 +84,7 @@ async function loadTeachers(){
 }
 
 // إضافة دفعة جديدة
-async function addPayment(id){
+window.addPayment = async function(id){
   const amount = parseFloat(prompt("أدخل مبلغ الدفعة:"));
   if(!amount || isNaN(amount)) return alert("مبلغ غير صالح");
 
@@ -94,11 +94,11 @@ async function addPayment(id){
   const payments = teacherSnap.data().payments || [];
   payments.push({ amount: Number(amount), date });
   await updateDoc(teacherRef, { payments });
-  loadTeachers();
+  window.loadTeachers();
 }
 
 // إضافة كروب جديد
-async function addGroup(id){
+window.addGroup = async function(id){
   const groupName = prompt("أدخل اسم الكروب الجديد:");
   if(!groupName) return;
   const teacherRef = doc(db, "teachers", id);
@@ -106,11 +106,11 @@ async function addGroup(id){
   const groups = teacherSnap.data().groups || [];
   groups.push(groupName);
   await updateDoc(teacherRef, { groups });
-  loadTeachers();
+  window.loadTeachers();
 }
 
 // تعديل أستاذ
-async function editTeacher(id){
+window.editTeacher = async function(id){
   const teacherRef = doc(db, "teachers", id);
   const teacherSnap = await getDoc(teacherRef);
   if(teacherSnap.exists()){
@@ -121,21 +121,21 @@ async function editTeacher(id){
     const newTotal = parseFloat(prompt("إجمالي المستحق:", teacher.totalSalary));
     if(newName && newSubject && !isNaN(newTotal)){
       await updateDoc(teacherRef, { name:newName, subject:newSubject, phone:newPhone, totalSalary:Number(newTotal) });
-      loadTeachers();
+      window.loadTeachers();
     }
   }
 }
 
 // حذف أستاذ
-async function deleteTeacher(id){
+window.deleteTeacher = async function(id){
   if(confirm("هل أنت متأكد من حذف هذا الأستاذ؟")){
     await deleteDoc(doc(db, "teachers", id));
-    loadTeachers();
+    window.loadTeachers();
   }
 }
 
 // إضافة أستاذ جديد
-async function submitAddTeacher(){
+window.submitAddTeacher = async function(){
   const name = document.getElementById("teacherName").value.trim();
   const subject = document.getElementById("teacherSubject").value.trim();
   const phone = document.getElementById("teacherPhone").value.trim();
@@ -156,7 +156,7 @@ async function submitAddTeacher(){
     groups
   });
 
-  loadTeachers();
+  window.loadTeachers();
   document.getElementById("teacherName").value = "";
   document.getElementById("teacherSubject").value = "";
   document.getElementById("teacherPhone").value = "";
@@ -165,7 +165,7 @@ async function submitAddTeacher(){
 }
 
 // طباعة استمارة كاملة للأستاذ
-async function printTeacherForm(id){
+window.printTeacherForm = async function(id){
   const teacherRef = doc(db, "teachers", id);
   const teacherSnap = await getDoc(teacherRef);
   if(!teacherSnap.exists()) return alert("المعلم غير موجود");

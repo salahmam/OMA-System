@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - نظام أوما</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase -->
+  <script type="module">
+    // استيراد مكتبات Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+    // إعداد Firebase الخاص بك
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+      authDomain: "oma-system-30813.firebaseapp.com",
+      projectId: "oma-system-30813",
+      storageBucket: "oma-system-30813.firebasestorage.app",
+      messagingSenderId: "905224657062",
+      appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
+      measurementId: "G-645066LLLP"
+    };
+
+    // تهيئة التطبيق والمصادقة
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // التحقق من المستخدم الحالي
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('userEmail').innerText = user.email;
+      } else {
+        alert('يجب تسجيل الدخول أولاً');
+        window.location.href = "login.html";
+      }
+    });
+
+    // زر تسجيل الخروج
+    window.logout = async function() {
+      try {
+        await signOut(auth);
+        alert("تم تسجيل الخروج بنجاح");
+        window.location.href = "login.html";
+      } catch (error) {
+        console.error("خطأ أثناء تسجيل الخروج:", error);
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(180deg, #ffffff, #eaf1ff);
+      color: #1a1a1a;
+      margin: 0;
+      direction: rtl;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .logout-btn {
+      background-color: #e53935;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+
+    .logout-btn:hover {
+      background-color: #c62828;
+    }
+
+    .info {
+      margin-top: 20px;
+      font-size: 18px;
+      background: #f1f3f6;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    footer {
+      margin-top: 30px;
+      text-align: center;
+      color: #777;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>لوحة التحكم - نظام أوما</h1>
+  </header>
+
+  <div class="container">
+    <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
+    <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+
+    <div class="info">
+      <h3>📘 معلومات سريعة:</h3>
+      <ul>
+        <li>عدد الطلاب المسجلين</li>
+        <li>عدد الأساتذة</li>
+        <li>الدروس المجدولة اليوم</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2025 نظام أوما - جميع الحقوق محفوظة</p>
+  </footer>
+</body>
+</html>

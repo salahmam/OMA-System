@@ -8,11 +8,9 @@
 
   <!-- Firebase -->
   <script type="module">
-    // استيراد مكتبات Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-    // إعداد Firebase الخاص بك
     const firebaseConfig = {
       apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
       authDomain: "oma-system-30813.firebaseapp.com",
@@ -23,11 +21,9 @@
       measurementId: "G-645066LLLP"
     };
 
-    // تهيئة التطبيق والمصادقة
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // التحقق من المستخدم الحالي
     onAuthStateChanged(auth, (user) => {
       if (user) {
         document.getElementById('userEmail').innerText = user.email;
@@ -37,7 +33,6 @@
       }
     });
 
-    // زر تسجيل الخروج
     window.logout = async function() {
       try {
         await signOut(auth);
@@ -74,8 +69,7 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
 
-    .logout-btn {
-      background-color: #e53935;
+    .logout-btn, .students-btn {
       color: white;
       border: none;
       padding: 10px 20px;
@@ -83,10 +77,23 @@
       cursor: pointer;
       font-size: 16px;
       transition: 0.3s;
+      margin-left: 10px;
+    }
+
+    .logout-btn {
+      background-color: #e53935;
     }
 
     .logout-btn:hover {
       background-color: #c62828;
+    }
+
+    .students-btn {
+      background-color: #004aad;
+    }
+
+    .students-btn:hover {
+      background-color: #003680;
     }
 
     .info {
@@ -113,6 +120,7 @@
   <div class="container">
     <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
     <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+    <button class="students-btn" onclick="openStudents()">📚 الطلاب</button>
 
     <div class="info">
       <h3>📘 معلومات سريعة:</h3>
@@ -127,5 +135,11 @@
   <footer>
     <p>© 2025 نظام أوما - جميع الحقوق محفوظة</p>
   </footer>
+
+  <script>
+    function openStudents() {
+      window.location.href = "students.html"; // ضع هنا اسم صفحة الطلاب
+    }
+  </script>
 </body>
 </html>

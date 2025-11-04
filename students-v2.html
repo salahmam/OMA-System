@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الطلاب - نظام أوما المتطور</title>
+
+<style>
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(180deg, #ffffff, #eef3ff);
+    color: #1a1a1a;
+    margin: 0;
+    direction: rtl;
+  }
+
+  header {
+    background-color: #004aad;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 22px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  }
+
+  .container {
+    width: 95%;
+    max-width: 1100px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    padding: 25px;
+  }
+
+  h2 {
+    color: #004aad;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+  }
+
+  input, select, button {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+    width: 48%;
+  }
+
+  button {
+    background-color: #004aad;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  button:hover {
+    background-color: #ffcc33;
+    color: #004aad;
+    transform: scale(1.05);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+  }
+
+  th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+  }
+
+  th {
+    background-color: #004aad;
+    color: white;
+  }
+
+  .delete-btn, .print-btn, .installment-btn {
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: white;
+  }
+
+  .delete-btn { background-color: crimson; }
+  .print-btn { background-color: darkgreen; }
+  .installment-btn { background-color: goldenrod; }
+
+  .delete-btn:hover { background-color: darkred; }
+  .print-btn:hover { background-color: green; }
+  .installment-btn:hover { background-color: orange; }
+
+  .subject-field {
+    width: 48%;
+  }
+
+  @media print {
+    header, form, button {
+      display: none;
+    }
+    table {
+      border: 1px solid #000;
+    }
+    body {
+      background: white;
+    }
+  }
+</style>
+</head>
+<body>
+  <header>📚 إدارة الطلاب - نظام أوما المتطور</header>
+
+  <div class="container">
+    <h2>إضافة طالب جديد</h2>
+    <form id="addStudentForm">
+      <input type="text" id="studentName" placeholder="اسم الطالب" required>
+      <input type="text" id="studentPhone" placeholder="رقم الهاتف" required>
+      <input type="text" id="studentAddress" placeholder="العنوان" required>
+      <input type="text" id="studentSchool" placeholder="اسم المدرسة" required>
+      <input type="text" id="studentStage" placeholder="المرحلة الدراسية" required>
+
+      <div id="subjectsContainer" style="width:100%;">
+        <input type="text" class="subject-field" placeholder="اسم المادة" required>
+      </div>
+      <button type="button" id="addSubjectBtn">➕ إضافة مادة أخرى</button>
+
+      <input type="number" id="totalFees" placeholder="إجمالي الأقساط" required>
+      <button type="submit">✅ حفظ الطالب</button>
+    </form>
+
+    <h2>قائمة الطلاب</h2>
+    <table id="studentsTable">
+      <thead>
+        <tr>
+          <th>الاسم</th>
+          <th>الهاتف</th>
+          <th>العنوان</th>
+          <th>المدرسة</th>
+          <th>المرحلة</th>
+          <th>المواد</th>
+          <th>الأقساط</th>
+          <th>خيارات</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Firebase (v10 Modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+      authDomain: "oma-system-30813.firebaseapp.com",
+      projectId: "oma-system-30813",
+      storageBucket: "oma-system-30813.firebasestorage.app",
+      messagingSenderId: "905224657062",
+      appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
+      measurementId: "G-645066LLLP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("addStudentForm");
+    const tableBody = document.querySelector("#studentsTable tbody");
+    const addSubjectBtn = document.getElementById("addSubjectBtn");
+    const subjectsContainer = document.getElementById("subjectsContainer");
+
+    addSubjectBtn.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "subject-field";
+      input.placeholder = "اسم المادة";
+      subjectsContainer.appendChild(input);
+    });
+
+    async function loadStudents() {
+      tableBody.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "students"));
+      querySnapshot.forEach((docSnap) => {
+        const student = docSnap.data();
+        const row = document.createElement("tr");
+        const subjects = student.subjects ? student.subjects.join(", ") : "-";
+        const installments = student.installments ? student.installments.length : 0;
+
+        row.innerHTML = `
+          <td>${student.name}</td>
+          <td>${student.phone}</td>
+          <td>${student.address}</td>
+          <td>${student.school}</td>
+          <td>${student.stage}</td>
+          <td>${subjects}</td>
+          <td>${installments}</td>
+          <td>
+            <button class="installment-btn" data-id="${docSnap.id}">➕ قسط</button>
+            <button class="print-btn" data-id="${docSnap.id}">🖨️ طباعة</button>
+            <button class="delete-btn" data-id="${docSnap.id}">حذف</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          await deleteDoc(doc(db, "students", id));
+          loadStudents();
+        });
+      });
+
+      document.querySelectorAll(".installment-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          const ref = doc(db, "students", id);
+          const snapshot = await getDoc(ref);
+          const data = snapshot.data();
+          const amount = prompt("أدخل مبلغ القسط:");
+          if (!amount) return;
+          const installment = { date: new Date().toLocaleDateString(), amount: parseFloat(amount) };
+          const updated = data.installments ? [...data.installments, installment] : [installment];
+          await updateDoc(ref, { installments: updated });
+          alert("✅ تم إضافة القسط بنجاح");
+          loadStudents();
+        });
+      });
+
+      document.querySelectorAll(".print-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          const ref = doc(db, "students", id);
+          const snapshot = await getDoc(ref);
+          const s = snapshot.data();
+          const win = window.open("", "_blank");
+          win.document.write(`
+            <html lang="ar" dir="rtl"><head>
+            <title>تقرير الطالب</title>
+            <style>
+              body { font-family: 'Cairo'; direction: rtl; padding: 40px; }
+              h2 { text-align:center; color:#004aad; }
+              table { width:100%; border-collapse: collapse; margin-top:20px; }
+              td, th { border:1px solid #333; padding:8px; text-align:center; }
+              th { background:#004aad; color:white; }
+            </style>
+            </head><body>
+            <h2>بيانات الطالب</h2>
+            <table>
+              <tr><th>الاسم</th><td>${s.name}</td></tr>
+              <tr><th>الهاتف</th><td>${s.phone}</td></tr>
+              <tr><th>العنوان</th><td>${s.address}</td></tr>
+              <tr><th>المدرسة</th><td>${s.school}</td></tr>
+              <tr><th>المرحلة</th><td>${s.stage}</td></tr>
+              <tr><th>المواد</th><td>${s.subjects.join(", ")}</td></tr>
+              <tr><th>عدد الأقساط</th><td>${s.installments ? s.installments.length : 0}</td></tr>
+            </table>
+            <h2>تفاصيل الأقساط</h2>
+            <table>
+              <tr><th>التاريخ</th><th>المبلغ</th></tr>
+              ${(s.installments || []).map(i => `<tr><td>${i.date}</td><td>${i.amount}</td></tr>`).join("")}
+            </table>
+            <script>window.print()</script>
+            </body></html>
+          `);
+        });
+      });
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("studentName").value;
+      const phone = document.getElementById("studentPhone").value;
+      const address = document.getElementById("studentAddress").value;
+      const school = document.getElementById("studentSchool").value;
+      const stage = document.getElementById("studentStage").value;
+      const totalFees = parseFloat(document.getElementById("totalFees").value);
+      const subjects = Array.from(document.querySelectorAll(".subject-field")).map(i => i.value);
+
+      await addDoc(collection(db, "students"), {
+        name, phone, address, school, stage, subjects, totalFees, installments: []
+      });
+
+      form.reset();
+      subjectsContainer.innerHTML = `<input type="text" class="subject-field" placeholder="اسم المادة" required>`;
+      loadStudents();
+    });
+
+    loadStudents();
+  </script>
+</body>
+</html>

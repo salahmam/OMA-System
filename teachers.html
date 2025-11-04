@@ -119,18 +119,40 @@ async function deleteTeacher(id){
   }
 }
 
-// إضافة أستاذ جديد
-async function addTeacher(){
-  const name = prompt("اسم الأستاذ:");
-  const subject = prompt("المادة:");
-  const totalSalary = parseFloat(prompt("إجمالي المستحق:"));
-  if(name && subject && !isNaN(totalSalary)){
-    await addDoc(collection(db, "teachers"), { name, subject, totalSalary, payments: [] });
-    loadTeachers();
-  }
+// فتح نموذج إضافة أستاذ
+function openAddTeacherForm(){
+  document.getElementById("addTeacherForm").style.display = "block";
 }
 
-// الطباعة مع تحديد إطار زمني
+function cancelAddTeacher(){
+  document.getElementById("addTeacherForm").style.display = "none";
+}
+
+// إرسال بيانات نموذج إضافة أستاذ
+async function submitAddTeacher(){
+  const name = document.getElementById("teacherName").value.trim();
+  const subject = document.getElementById("teacherSubject").value.trim();
+  const totalSalary = parseFloat(document.getElementById("teacherSalary").value);
+
+  if(!name || !subject || isNaN(totalSalary)){
+    return alert("الرجاء إدخال جميع البيانات بشكل صحيح");
+  }
+
+  await addDoc(collection(db, "teachers"), {
+    name,
+    subject,
+    totalSalary,
+    payments: []
+  });
+
+  loadTeachers();
+  document.getElementById("addTeacherForm").style.display = "none";
+  document.getElementById("teacherName").value = "";
+  document.getElementById("teacherSubject").value = "";
+  document.getElementById("teacherSalary").value = "";
+}
+
+// الطباعة مع إطار زمني
 function printTeachers(){
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
@@ -147,24 +169,12 @@ function printTeachers(){
 
   rows.forEach(tr=>{
     const tds = tr.querySelectorAll("td");
-    const teacherName = tds[0].innerText;
-    const subject = tds[1].innerText;
-    const total = parseFloat(tds[2].innerText.replace(/,/g,''));
-    const paid = parseFloat(tds[3].innerText.replace(/,/g,''));
-    const remaining = parseFloat(tds[4].innerText.replace(/,/g,''));
-    
-    // فلترة المدفوع حسب التاريخ إذا تم تحديده
-    if(startDate || endDate){
-      // في هذه النسخة الطباعة ستقوم بعرض إجمالي المدفوع كما هو
-      // لاحقاً يمكن تعديل لحساب المدفوع داخل الفترة فقط
-    }
-
     printContent += `<tr>
-      <td>${teacherName}</td>
-      <td>${subject}</td>
-      <td>${total.toLocaleString()}</td>
-      <td>${paid.toLocaleString()}</td>
-      <td>${remaining.toLocaleString()}</td>
+      <td>${tds[0].innerText}</td>
+      <td>${tds[1].innerText}</td>
+      <td>${tds[2].innerText}</td>
+      <td>${tds[3].innerText}</td>
+      <td>${tds[4].innerText}</td>
     </tr>`;
   });
 
@@ -186,18 +196,30 @@ button { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; margi
 button:hover{opacity:0.8;}
 .logout-btn{background:#e53935;color:white;margin-bottom:10px;}
 .add-btn, .print-btn{background:#004aad;color:white;margin-bottom:10px;}
-footer{text-align:center;margin-top:30px;color:#777;}
 .date-input{padding:5px 10px;margin-left:5px;border-radius:5px;border:1px solid #ccc;}
+#addTeacherForm{background:#f1f3f6;padding:15px;border-radius:8px;margin-top:15px;}
+#addTeacherForm input{padding:5px;margin:5px 0;}
 </style>
 </head>
 <body>
+
 <header><h1>إدارة الأساتذة - نظام أوما</h1></header>
 
 <div class="container">
   <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
   <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
-  <button class="add-btn" onclick="addTeacher()">➕ إضافة أستاذ</button>
-  <br><br>
+  <button class="add-btn" onclick="openAddTeacherForm()">➕ إضافة أستاذ</button>
+
+  <div id="addTeacherForm" style="display:none;">
+    <h3>إضافة أستاذ جديد</h3>
+    <label>الاسم: <input type="text" id="teacherName"></label><br>
+    <label>المادة: <input type="text" id="teacherSubject"></label><br>
+    <label>إجمالي المستحق: <input type="number" id="teacherSalary"></label><br>
+    <button onclick="submitAddTeacher()">إضافة</button>
+    <button onclick="cancelAddTeacher()">إلغاء</button>
+  </div>
+
+  <br>
   <label>من: <input type="date" id="startDate" class="date-input"></label>
   <label>إلى: <input type="date" id="endDate" class="date-input"></label>
   <button class="print-btn" onclick="printTeachers()">🖨️ طباعة</button>

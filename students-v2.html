@@ -1,217 +1,379 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>صفحة الطلاب</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>إدارة الطلاب - OMA</title>
+
 <style>
-body {
-    font-family: 'Cairo', sans-serif;
-    background: linear-gradient(180deg, #ffffff, #f7f9fb);
-    color: #1a1a1a;
-    margin: 0;
-    direction: rtl;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: center;
-}
-th {
-    background-color: #004aad;
-    color: white;
-}
-button {
-    padding: 5px 10px;
-    margin: 2px;
-    cursor: pointer;
-}
+  :root{
+    --primary:#004aad;
+    --accent:#ffcc33;
+    --bg:#f5f9ff;
+    --card:#fff;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family: 'Cairo',sans-serif;
+    margin:0;background:linear-gradient(180deg,var(--bg),#fff);
+    color:#102027;direction:rtl;
+  }
+  header{
+    background:linear-gradient(90deg,var(--primary),#007bff);
+    color:#fff;padding:18px 16px;text-align:center;font-size:20px;font-weight:700;
+    box-shadow:0 3px 12px rgba(2,20,40,0.08);
+  }
+  .wrap{max-width:1200px;margin:22px auto;padding:12px;}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);flex:1}
+  .form-grid{display:flex;flex-wrap:wrap;gap:10px}
+  input[type="text"], input[type="tel"], input[type="number"], select, textarea, .subject-field {
+    padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;
+  }
+  .two{width:calc(50% - 6px)}
+  .three{width:calc(33.333% - 8px)}
+  label{display:block;margin-bottom:6px;font-size:13px;color:#37474f}
+  .btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+  .btn.warn{background:#ff7043}
+  .btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
+  .add-subj{display:inline-block;margin-top:6px}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
+  th{background:var(--primary);color:#fff}
+  .actions button{margin:0 6px}
+  .small{padding:6px 8px;font-size:13px;border-radius:6px}
+  .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .right{display:flex;gap:8px;align-items:center}
+  .checkbox{width:18px;height:18px}
+  @media (max-width:900px){
+    .two,.three{width:100%}
+    .controls{flex-direction:column;align-items:stretch}
+  }
+  @media print{
+    body{background:white;padding:0}
+    header, .controls, .card .form-grid, .filters, .actions{display:none}
+    .print-page{box-shadow:none;margin:0;padding:0}
+  }
+  .modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999;}
+  .modal.open{display:flex}
+  .modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto}
+  .flex{display:flex;gap:8px;align-items:center}
+  .logo-preview{height:60px;object-fit:contain}
 </style>
 </head>
 <body>
+<header>نظام OMA - إدارة الطلاب (النسخة المتقدمة)</header>
 
-<h1>قائمة الطلاب</h1>
+<div class="wrap">
+  <div class="controls">
+    <!-- إضافة طالب -->
+    <div style="flex:1" class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <strong>أضف طالب جديد</strong>
+          <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
+        </div>
+        <div class="right">
+          <button id="openLogoBtn" class="btn ghost">رفع شعار المعهد</button>
+          <input id="searchInput" placeholder="بحث بالاسم أو الهاتف..." style="padding:8px;border-radius:8px;border:1px solid #e0e6ef" />
+          <button id="refreshBtn" class="btn">تحديث</button>
+        </div>
+      </div>
 
-<div>
-    <label>المرحلة:
-        <select id="filterStage">
-            <option value="">الكل</option>
-            <option value="أولى">أولى</option>
-            <option value="ثانية">ثانية</option>
-        </select>
-    </label>
-    <label>القسط:
-        <select id="filterGroup">
-            <option value="">الكل</option>
-            <option value="أول">أول</option>
-            <option value="ثاني">ثاني</option>
-        </select>
-    </label>
+      <form id="studentForm" style="margin-top:12px">
+        <div class="form-grid">
+          <div class="two"><label>الاسم الكامل</label><input id="name" type="text" required /></div>
+          <div class="two"><label>رقم الموبايل</label><input id="phone" type="tel" required /></div>
+          <div class="two"><label>العنوان</label><input id="address" type="text" /></div>
+          <div class="two"><label>اسم المدرسة</label><input id="school" type="text" /></div>
+          <div class="two"><label>المرحلة الدراسية</label><input id="stage" type="text" /></div>
+          <div class="two"><label>المجموعة / الكروب</label><input id="group" type="text" placeholder="مثال: A أو 101" /></div>
+
+          <div style="width:100%">
+            <label>المواد (أضف أكثر من مادة)</label>
+            <div id="subjectsContainer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+            <div style="margin-top:8px">
+              <button id="addSubjectBtn" type="button" class="btn ghost small add-subj">➕ إضافة مادة</button>
+            </div>
+          </div>
+
+          <div class="two"><label>إجمالي الأقساط (اختياري)</label><input id="totalFees" type="number" min="0" /></div>
+          <div class="two"><label>ملاحظة / وصف الطالب</label><input id="note" type="text" /></div>
+
+          <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
+            <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
+            <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- فلترة / طباعة -->
+    <div style="min-width:320px" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <strong>طباعة / فلترة القائمة</strong>
+          <div style="font-size:13px;color:#546e7a">حدد شروط الطباعة أو اختَر طباعة مفصلة لطالب</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="filterStage" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef"><option value="">كل المراحل</option></select>
+          <select id="filterGroup" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef"><option value="">كل المجموعات</option></select>
+          <select id="filterInstallment" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
+            <option value="">كل الاقساط</option>
+            <option value="1">القسط الأول</option>
+            <option value="2">القسط الثاني</option>
+            <option value="3">القسط الثالث</option>
+            <option value="4">القسط الرابع</option>
+          </select>
+          <button id="printSelectedBtn" class="btn">🖨️ طباعة المحدد</button>
+          <button id="printFilteredBtn" class="btn">🖨️ طباعة القائمة</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- جدول الطلاب -->
+  <div class="card" style="margin-top:12px;overflow-x:auto">
+    <table id="studentsTable">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAll" class="checkbox" /></th>
+          <th>الاسم</th>
+          <th>الهاتف</th>
+          <th>المرحلة</th>
+          <th>المجموعة</th>
+          <th>المواد</th>
+          <th>عدد الأقساط</th>
+          <th>الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div style="margin-top:8px;font-size:13px">عدد الطلاب: <span id="totalCount">0</span></div>
+  </div>
 </div>
 
-<p>عدد الطلاب: <span id="totalCount">0</span></p>
-
-<table id="studentsTable">
-<thead>
-<tr>
-    <th>الاسم</th>
-    <th>المرحلة</th>
-    <th>القسط</th>
-    <th>الإجراءات</th>
-</tr>
-</thead>
-<tbody>
-<!-- سيتم ملؤها بالطلاب -->
-</tbody>
-</table>
-
-<!-- نموذج تعديل الطالب -->
-<div id="editFormDiv" style="display:none;">
-<h2>تعديل بيانات الطالب</h2>
-<form id="editForm">
-    <input type="hidden" id="studentId">
-    الاسم: <input type="text" id="editName" required><br><br>
-    المرحلة: 
-    <select id="editStage" required>
-        <option value="أولى">أولى</option>
-        <option value="ثانية">ثانية</option>
-    </select><br><br>
-    القسط: 
-    <select id="editGroup" required>
-        <option value="أول">أول</option>
-        <option value="ثاني">ثاني</option>
-    </select><br><br>
-    <button type="submit">حفظ</button>
-    <button type="button" id="cancelEdit">إلغاء</button>
-</form>
+<!-- نافذة الشعار -->
+<div class="modal" id="logoModal">
+  <div class="box">
+    <h3>رفع شعار المعهد</h3>
+    <input type="file" id="logoInput" accept="image/*"/>
+    <div style="margin-top:12px"><img id="logoPreview" class="logo-preview"/></div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button id="saveLogoBtn" class="btn">حفظ</button>
+      <button id="closeLogoBtn" class="btn ghost">إغلاق</button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
-// Firebase imports
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+// استيراد Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js";
+import { setDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 // إعداد Firebase
-const firebaseConfig = {
-    apiKey: "API_KEY",
-    authDomain: "PROJECT_ID.firebaseapp.com",
-    projectId: "PROJECT_ID",
-    storageBucket: "PROJECT_ID.appspot.com",
-    messagingSenderId: "SENDER_ID",
-    appId: "APP_ID"
-};
-
+const firebaseConfig = { /* ضع هنا إعدادات مشروعك */ };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-const studentsTable = document.querySelector("#studentsTable tbody");
-const totalCount = document.getElementById("totalCount");
-const filterStage = document.getElementById("filterStage");
-const filterGroup = document.getElementById("filterGroup");
+// عناصر DOM
+const tableBody = document.getElementById('tableBody');
+const studentForm = document.getElementById('studentForm');
+const saveStudentBtn = document.getElementById('saveStudentBtn');
+const subjectsContainer = document.getElementById('subjectsContainer');
+const addSubjectBtn = document.getElementById('addSubjectBtn');
+const searchInput = document.getElementById('searchInput');
+const filterStage = document.getElementById('filterStage');
+const filterGroup = document.getElementById('filterGroup');
+const filterInstallment = document.getElementById('filterInstallment');
+const totalCount = document.getElementById('totalCount');
+const selectAll = document.getElementById('selectAll');
+const refreshBtn = document.getElementById('refreshBtn');
+const logoModal = document.getElementById('logoModal');
+const logoInput = document.getElementById('logoInput');
+const logoPreview = document.getElementById('logoPreview');
+const openLogoBtn = document.getElementById('openLogoBtn');
+const closeLogoBtn = document.getElementById('closeLogoBtn');
+const saveLogoBtn = document.getElementById('saveLogoBtn');
 
-let studentsData = [];
+// دوال مساعدة
+function escapeHtml(text){ return text ? text.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) : ''; }
+function addSubjectField(value=''){ 
+  const input = document.createElement('input');
+  input.type='text'; input.className='subject-field'; input.value=value; input.placeholder='اسم المادة';
+  subjectsContainer.appendChild(input);
+}
+
+// فتح / غلق نافذة الشعار
+openLogoBtn.onclick = ()=>logoModal.classList.add('open');
+closeLogoBtn.onclick = ()=>logoModal.classList.remove('open');
+logoInput.onchange = e=>{
+  const file = e.target.files[0];
+  if(file) logoPreview.src = URL.createObjectURL(file);
+}
+
+// حفظ الشعار
+saveLogoBtn.onclick = async ()=>{
+  if(!logoInput.files[0]) return alert('اختر صورة');
+  const file = logoInput.files[0];
+  const logoRef = ref(storage,'institute-logo/'+file.name);
+  await uploadBytes(logoRef,file);
+  const url = await getDownloadURL(logoRef);
+  await setDoc(doc(db,'config','logo'),{url});
+  alert('تم حفظ الشعار'); logoModal.classList.remove('open'); logoPreview.src='';
+}
+
+// مسح الحقول
+document.getElementById('clearFormBtn').onclick = ()=>{
+  studentForm.reset();
+  subjectsContainer.innerHTML='';
+  addSubjectField();
+  saveStudentBtn.textContent='✅ حفظ الطالب';
+}
+
+// إضافة مادة
+addSubjectBtn.onclick = ()=>addSubjectField();
 
 // تحميل الطلاب
-async function loadStudents() {
-    const querySnapshot = await getDocs(collection(db, "students"));
-    studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderTable();
+async function loadStudents(){
+  tableBody.innerHTML=''; 
+  try{
+    const q=query(collection(db,'students'),orderBy('createdAt','desc'));
+    const snapshot=await getDocs(q);
+    const docs=[]; const stagesSet=new Set(); const groupsSet=new Set();
+    snapshot.forEach(docSnap=>{
+      const data=docSnap.data();
+      docs.push({id:docSnap.id,...data});
+      if(data.stage) stagesSet.add(data.stage);
+      if(data.group) groupsSet.add(data.group);
+    });
+    populateFilterOptions(Array.from(stagesSet).sort(),Array.from(groupsSet).sort());
+    const search=searchInput.value.trim().toLowerCase();
+    const stageFilter=filterStage.value;
+    const groupFilter=filterGroup.value;
+    const installmentFilter=filterInstallment.value ? parseInt(filterInstallment.value) : null;
+    const filtered=docs.filter(s=>{
+      if(search && !(s.name?.toLowerCase().includes(search) || s.phone?.toLowerCase().includes(search) || (s.school||'').toLowerCase().includes(search))) return false;
+      if(stageFilter && s.stage!==stageFilter) return false;
+      if(groupFilter && s.group!==groupFilter) return false;
+      if(installmentFilter){ if(!(Array.isArray(s.installments) && s.installments.length>=installmentFilter)) return false; }
+      return true;
+    });
+    totalCount.innerText=filtered.length;
+    filtered.forEach(s=>{
+      const tr=document.createElement('tr');
+      const subjText=s.subjects && s.subjects.length ? s.subjects.join('، ') : '-';
+      const instCount=(s.installments && s.installments.length) ? s.installments.length : 0;
+      tr.innerHTML=`
+        <td><input type="checkbox" class="sel" data-id="${s.id}"/></td>
+        <td style="text-align:right">${escapeHtml(s.name)}</td>
+        <td>${escapeHtml(s.phone)}</td>
+        <td>${escapeHtml(s.stage||'-')}</td>
+        <td>${escapeHtml(s.group||'-')}</td>
+        <td style="text-align:right">${escapeHtml(subjText)}</td>
+        <td>${instCount}</td>
+        <td class="actions">
+          <button class="btn ghost small" data-id="${s.id}" data-action="view">عرض</button>
+          <button class="btn small" data-id="${s.id}" data-action="install">➕ قسط</button>
+          <button class="btn" data-id="${s.id}" data-action="print">🖨️ طباعة</button>
+          <button class="btn warn small" data-id="${s.id}" data-action="edit">✏️ تعديل</button>
+          <button class="btn warn small" data-id="${s.id}" data-action="delete">حذف</button>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
+    tableBody.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',handleRowAction));
+    selectAll.checked=false;
+    selectAll.onchange=()=>{document.querySelectorAll('.sel').forEach(cb=>cb.checked=selectAll.checked);}
+  }catch(err){console.error('loadStudents error:',err);}
 }
 
-// عرض الطلاب حسب الفلاتر
-function renderTable() {
-    const stageVal = filterStage.value;
-    const groupVal = filterGroup.value;
-
-    const filtered = studentsData.filter(student => {
-        return (!stageVal || student.stage === stageVal) &&
-               (!groupVal || student.group === groupVal);
-    });
-
-    studentsTable.innerHTML = "";
-    filtered.forEach(student => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${student.name}</td>
-            <td>${student.stage}</td>
-            <td>${student.group}</td>
-            <td>
-                <button onclick="editStudent('${student.id}')">تعديل</button>
-                <button onclick="printStudent('${student.id}')">طباعة</button>
-            </td>
-        `;
-        studentsTable.appendChild(row);
-    });
-
-    totalCount.innerText = filtered.length;
+function populateFilterOptions(stages,groups){
+  filterStage.innerHTML='<option value="">كل المراحل</option>';
+  stages.forEach(s=>filterStage.innerHTML+=`<option value="${s}">${s}</option>`);
+  filterGroup.innerHTML='<option value="">كل المجموعات</option>';
+  groups.forEach(g=>filterGroup.innerHTML+=`<option value="${g}">${g}</option>`);
 }
 
-// الفلاتر
-filterStage.addEventListener("change", renderTable);
-filterGroup.addEventListener("change", renderTable);
-
-// تعديل الطالب
-const editFormDiv = document.getElementById("editFormDiv");
-const editForm = document.getElementById("editForm");
-const editName = document.getElementById("editName");
-const editStage = document.getElementById("editStage");
-const editGroup = document.getElementById("editGroup");
-const studentIdInput = document.getElementById("studentId");
-
-window.editStudent = function(id) {
-    const student = studentsData.find(s => s.id === id);
-    if (!student) return;
-    studentIdInput.value = student.id;
-    editName.value = student.name;
-    editStage.value = student.stage;
-    editGroup.value = student.group;
-    editFormDiv.style.display = "block";
-};
-
-document.getElementById("cancelEdit").addEventListener("click", () => {
-    editFormDiv.style.display = "none";
+// إضافة طالب جديد
+studentForm.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const name=document.getElementById('name').value.trim();
+  const phone=document.getElementById('phone').value.trim();
+  if(!name||!phone){alert('الاسم ورقم الهاتف مطلوب');return;}
+  const address=document.getElementById('address').value.trim();
+  const school=document.getElementById('school').value.trim();
+  const stage=document.getElementById('stage').value.trim();
+  const group=document.getElementById('group').value.trim();
+  const totalFees=parseFloat(document.getElementById('totalFees').value)||0;
+  const note=document.getElementById('note').value.trim();
+  const subjects=Array.from(document.querySelectorAll('.subject-field')).map(i=>i.value).filter(Boolean);
+  await addDoc(collection(db,'students'),{name,phone,address,school,stage,group,subjects,totalFees,installments:[],note,createdAt:new Date()});
+  studentForm.reset(); subjectsContainer.innerHTML=''; addSubjectField();
+  loadStudents();
 });
 
-// حفظ التعديلات
-editForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const id = studentIdInput.value;
-    await updateDoc(doc(db, "students", id), {
-        name: editName.value,
-        stage: editStage.value,
-        group: editGroup.value
-    });
-    loadStudents();
-    editFormDiv.style.display = "none";
-});
+searchInput.oninput=loadStudents;
+filterStage.onchange=loadStudents;
+filterGroup.onchange=loadStudents;
+filterInstallment.onchange=loadStudents;
+refreshBtn.onclick=loadStudents;
 
-// طباعة طالب
-window.printStudent = function(id) {
-    const student = studentsData.find(s => s.id === id);
-    if (!student) return;
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`
-        <html>
-        <head>
-            <title>طباعة الطالب</title>
-        </head>
-        <body>
-            <h2>معهدنا</h2>
-            <p>الاسم: ${student.name}</p>
-            <p>المرحلة: ${student.stage}</p>
-            <p>القسط: ${student.group}</p>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-};
-
+// تنفيذ التحميل عند بدء الصفحة
+addSubjectField();
 loadStudents();
+
+// دالة التعامل مع أزرار الصفوف
+async function handleRowAction(e){
+  const id=e.target.dataset.id;
+  const action=e.target.dataset.action;
+  if(action==='delete'){if(confirm('تأكيد الحذف؟')){await deleteDoc(doc(db,'students',id)); loadStudents();}}
+  else if(action==='edit'){editStudent(id);}
+  else if(action==='view'){alert('عرض تفاصيل الطالب');}
+  else if(action==='install'){alert('إضافة قسط للطالب');}
+  else if(action==='print'){alert('طباعة بيانات الطالب');}
+}
+
+// تعديل طالب
+async function editStudent(id){
+  const snap=await getDoc(doc(db,'students',id));
+  if(!snap.exists()){alert('الطالب غير موجود'); return;}
+  const s=snap.data();
+  document.getElementById('name').value=s.name||'';
+  document.getElementById('phone').value=s.phone||'';
+  document.getElementById('address').value=s.address||'';
+  document.getElementById('school').value=s.school||'';
+  document.getElementById('stage').value=s.stage||'';
+  document.getElementById('group').value=s.group||'';
+  document.getElementById('totalFees').value=s.totalFees||'';
+  document.getElementById('note').value=s.note||'';
+  subjectsContainer.innerHTML=''; (s.subjects||[]).forEach(sub=>addSubjectField(sub));
+  saveStudentBtn.textContent='حفظ التعديل';
+  studentForm.replaceWith(studentForm.cloneNode(true));
+  const newForm=document.getElementById('studentForm');
+  newForm.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const name=document.getElementById('name').value.trim();
+    const phone=document.getElementById('phone').value.trim();
+    const address=document.getElementById('address').value.trim();
+    const school=document.getElementById('school').value.trim();
+    const stage=document.getElementById('stage').value.trim();
+    const group=document.getElementById('group').value.trim();
+    const totalFees=parseFloat(document.getElementById('totalFees').value)||0;
+    const note=document.getElementById('note').value.trim();
+    const subjects=Array.from(document.querySelectorAll('.subject-field')).map(i=>i.value).filter(Boolean);
+    await updateDoc(doc(db,'students',id),{name,phone,address,school,stage,group,totalFees,note,subjects});
+    alert('تم تحديث بيانات الطالب');
+    saveStudentBtn.textContent='✅ حفظ الطالب';
+    loadStudents();
+    newForm.reset(); subjectsContainer.innerHTML=''; addSubjectField();
+    newForm.addEventListener('submit',e=>studentForm.dispatchEvent(new Event('submit')));// إعادة المستمع الأصلي
+  });
+}
 </script>
 </body>
 </html>

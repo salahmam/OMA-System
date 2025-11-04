@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>إدارة الأساتذة - نظام أوما</title>
-<link rel="stylesheet" href="style.css">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
@@ -57,9 +56,9 @@ async function loadTeachers(){
 
   snapshot.forEach(docSnap => {
     const teacher = docSnap.data();
-    const total = teacher.totalSalary || 0;
+    const total = Number(teacher.totalSalary) || 0;
     const payments = teacher.payments || [];
-    const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+    const paid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
     const remaining = total - paid;
     const groups = teacher.groups || [];
 
@@ -92,8 +91,7 @@ async function addPayment(id){
   const teacherRef = doc(db, "teachers", id);
   const teacherSnap = await getDoc(teacherRef);
   const payments = teacherSnap.data().payments || [];
-  payments.push({ amount, date });
-
+  payments.push({ amount: Number(amount), date });
   await updateDoc(teacherRef, { payments });
   loadTeachers();
 }
@@ -102,12 +100,10 @@ async function addPayment(id){
 async function addGroup(id){
   const groupName = prompt("أدخل اسم الكروب الجديد:");
   if(!groupName) return;
-
   const teacherRef = doc(db, "teachers", id);
   const teacherSnap = await getDoc(teacherRef);
   const groups = teacherSnap.data().groups || [];
   groups.push(groupName);
-
   await updateDoc(teacherRef, { groups });
   loadTeachers();
 }
@@ -123,7 +119,7 @@ async function editTeacher(id){
     const newPhone = prompt("رقم الهاتف:", teacher.phone || '');
     const newTotal = parseFloat(prompt("إجمالي المستحق:", teacher.totalSalary));
     if(newName && newSubject && !isNaN(newTotal)){
-      await updateDoc(teacherRef, { name: newName, subject: newSubject, phone: newPhone, totalSalary: newTotal });
+      await updateDoc(teacherRef, { name:newName, subject:newSubject, phone:newPhone, totalSalary:Number(newTotal) });
       loadTeachers();
     }
   }
@@ -144,7 +140,7 @@ async function submitAddTeacher(){
   const phone = document.getElementById("teacherPhone").value.trim();
   const totalSalary = parseFloat(document.getElementById("teacherSalary").value);
   const groupsInput = document.getElementById("teacherGroups").value.trim();
-  const groups = groupsInput ? groupsInput.split(",").map(g => g.trim()) : [];
+  const groups = groupsInput ? groupsInput.split(",").map(g=>g.trim()) : [];
 
   if(!name || !subject || !phone || isNaN(totalSalary)){
     return alert("الرجاء إدخال جميع البيانات بشكل صحيح");
@@ -154,7 +150,7 @@ async function submitAddTeacher(){
     name,
     subject,
     phone,
-    totalSalary,
+    totalSalary: Number(totalSalary),
     payments: [],
     groups
   });
@@ -167,22 +163,34 @@ async function submitAddTeacher(){
   document.getElementById("teacherGroups").value = "";
 }
 
-// الطباعة
+// الطباعة على ورقة A4 بتنسيق احترافي
 function printTeachers(){
   const rows = document.querySelectorAll("#teachersTable tbody tr");
-  let printContent = `<h2>تقارير الأساتذة</h2><table border="1" style="width:100%;border-collapse:collapse;">
-    <tr>
-      <th>الاسم</th>
-      <th>المادة</th>
-      <th>الهاتف</th>
-      <th>الكروبات</th>
-      <th>المبلغ الإجمالي</th>
-      <th>المدفوع</th>
-      <th>المتبقي</th>
-    </tr>`;
+  let content = `
+  <html>
+  <head>
+    <title>تقارير الأساتذة</title>
+    <style>
+      body { font-family:'Cairo', sans-serif; direction:rtl; margin:20px; }
+      table { width:100%; border-collapse: collapse; }
+      th, td { border:1px solid #000; padding:8px; text-align:center; }
+      th { background:#004aad; color:white; }
+      h2 { text-align:center; }
+      @media print {
+        @page { size:A4; margin:20mm; }
+      }
+    </style>
+  </head>
+  <body>
+    <h2>تقارير الأساتذة</h2>
+    <table>
+      <tr>
+        <th>الاسم</th><th>المادة</th><th>الهاتف</th><th>الكروبات</th>
+        <th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th>
+      </tr>`;
   rows.forEach(tr=>{
     const tds = tr.querySelectorAll("td");
-    printContent += `<tr>
+    content += `<tr>
       <td>${tds[0].innerText}</td>
       <td>${tds[1].innerText}</td>
       <td>${tds[2].innerText}</td>
@@ -192,9 +200,11 @@ function printTeachers(){
       <td>${tds[6].innerText}</td>
     </tr>`;
   });
-  printContent += "</table>";
+  content += `</table></body></html>`;
   const newWin = window.open("");
-  newWin.document.write(printContent);
+  newWin.document.write(content);
+  newWin.document.close();
+  newWin.focus();
   newWin.print();
 }
 </script>
@@ -220,40 +230,35 @@ button:hover{opacity:0.8;}
 <header><h1>إدارة الأساتذة - نظام أوما</h1></header>
 
 <div class="container">
-  <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
-  <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+<p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
+<button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
 
-  <!-- نموذج إضافة أستاذ ظاهر دائمًا -->
-  <div id="addTeacherForm">
-    <h3>إضافة أستاذ جديد</h3>
-    <label>الاسم: <input type="text" id="teacherName"></label><br>
-    <label>المادة: <input type="text" id="teacherSubject"></label><br>
-    <label>الهاتف: <input type="text" id="teacherPhone"></label><br>
-    <label>المبلغ الإجمالي: <input type="number" id="teacherSalary"></label><br>
-    <label>الكروبات (افصل بين الكروبات بفاصلة): <input type="text" id="teacherGroups"></label><br>
-    <button onclick="submitAddTeacher()">إضافة</button>
-  </div>
-
-  <br>
-  <button class="print-btn" onclick="printTeachers()">🖨️ طباعة</button>
-
-  <table id="teachersTable">
-    <thead>
-      <tr>
-        <th>الاسم</th>
-        <th>المادة</th>
-        <th>الهاتف</th>
-        <th>الكروبات</th>
-        <th>المبلغ الإجمالي</th>
-        <th>المدفوع</th>
-        <th>المتبقي</th>
-        <th>الإجراءات</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- سيتم ملؤه ديناميكياً -->
-    </tbody>
-  </table>
+<!-- نموذج إضافة أستاذ ظاهر دائمًا -->
+<div id="addTeacherForm">
+<h3>إضافة أستاذ جديد</h3>
+<label>الاسم: <input type="text" id="teacherName"></label><br>
+<label>المادة: <input type="text" id="teacherSubject"></label><br>
+<label>الهاتف: <input type="text" id="teacherPhone"></label><br>
+<label>المبلغ الإجمالي: <input type="number" id="teacherSalary"></label><br>
+<label>الكروبات (افصل بين الكروبات بفاصلة): <input type="text" id="teacherGroups"></label><br>
+<button onclick="submitAddTeacher()">إضافة</button>
 </div>
 
-<footer><p>© 2025 نظام أوما
+<br>
+<button class="print-btn" onclick="printTeachers()">🖨️ طباعة تقارير</button>
+
+<table id="teachersTable">
+<thead>
+<tr>
+<th>الاسم</th><th>المادة</th><th>الهاتف</th><th>الكروبات</th>
+<th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الإجراءات</th>
+</tr>
+</thead>
+<tbody>
+<!-- سيتم ملؤه ديناميكياً -->
+</tbody>
+</table>
+</div>
+
+</body>
+</html>

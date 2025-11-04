@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الطلاب - نظام أوما</title>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(180deg, #ffffff, #eaf1ff);
+      color: #1a1a1a;
+      margin: 0;
+      direction: rtl;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-size: 22px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    }
+
+    .container {
+      width: 90%;
+      max-width: 900px;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 20px;
+      animation: fadeIn 0.8s ease;
+    }
+
+    h2 {
+      color: #004aad;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
+    input, select, button {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      width: 48%;
+    }
+
+    button {
+      background-color: #004aad;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #ffcc33;
+      color: #004aad;
+      transform: scale(1.05);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background-color: #004aad;
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #f2f2f2;
+    }
+
+    .delete-btn {
+      background-color: crimson;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background-color: darkred;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <header>📚 إدارة الطلاب - نظام أوما</header>
+
+  <div class="container">
+    <h2>إضافة طالب جديد</h2>
+
+    <form id="addStudentForm">
+      <input type="text" id="studentName" placeholder="اسم الطالب" required>
+      <input type="text" id="studentPhone" placeholder="رقم الهاتف" required>
+      <input type="text" id="courseName" placeholder="اسم الدورة" required>
+      <input type="number" id="paidAmount" placeholder="المبلغ المدفوع" required>
+      <input type="number" id="remainingAmount" placeholder="المبلغ المتبقي" required>
+      <button type="submit">➕ إضافة الطالب</button>
+    </form>
+
+    <h2>قائمة الطلاب</h2>
+    <table id="studentsTable">
+      <thead>
+        <tr>
+          <th>الاسم</th>
+          <th>الهاتف</th>
+          <th>الدورة</th>
+          <th>مدفوع</th>
+          <th>متبقي</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Firebase (v10 Modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+      authDomain: "oma-system-30813.firebaseapp.com",
+      projectId: "oma-system-30813",
+      storageBucket: "oma-system-30813.firebasestorage.app",
+      messagingSenderId: "905224657062",
+      appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
+      measurementId: "G-645066LLLP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("addStudentForm");
+    const tableBody = document.querySelector("#studentsTable tbody");
+
+    async function loadStudents() {
+      tableBody.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "students"));
+      querySnapshot.forEach((docSnap) => {
+        const student = docSnap.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${student.name}</td>
+          <td>${student.phone}</td>
+          <td>${student.course}</td>
+          <td>${student.paid}</td>
+          <td>${student.remaining}</td>
+          <td><button class="delete-btn" data-id="${docSnap.id}">حذف</button></td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          await deleteDoc(doc(db, "students", id));
+          loadStudents();
+        });
+      });
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("studentName").value;
+      const phone = document.getElementById("studentPhone").value;
+      const course = document.getElementById("courseName").value;
+      const paid = parseFloat(document.getElementById("paidAmount").value);
+      const remaining = parseFloat(document.getElementById("remainingAmount").value);
+
+      await addDoc(collection(db, "students"), {
+        name, phone, course, paid, remaining
+      });
+
+      form.reset();
+      loadStudents();
+    });
+
+    loadStudents();
+  </script>
+</body>
+</html>

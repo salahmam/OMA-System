@@ -76,6 +76,7 @@ async function loadTeachers(){
         <button onclick="editTeacher('${docSnap.id}')">✏️ تعديل</button>
         <button onclick="deleteTeacher('${docSnap.id}')">🗑️ حذف</button>
         <button onclick="addGroup('${docSnap.id}')">➕ كروب</button>
+        <button onclick="printTeacherForm('${docSnap.id}')">🖨️ طباعة الاستمارة</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -96,7 +97,7 @@ async function addPayment(id){
   loadTeachers();
 }
 
-// إضافة كروب جديد لكل أستاذ
+// إضافة كروب جديد
 async function addGroup(id){
   const groupName = prompt("أدخل اسم الكروب الجديد:");
   if(!groupName) return;
@@ -163,44 +164,56 @@ async function submitAddTeacher(){
   document.getElementById("teacherGroups").value = "";
 }
 
-// الطباعة على ورقة A4 بتنسيق احترافي
-function printTeachers(){
-  const rows = document.querySelectorAll("#teachersTable tbody tr");
-  let content = `
+// طباعة استمارة كاملة للأستاذ
+async function printTeacherForm(id){
+  const teacherRef = doc(db, "teachers", id);
+  const teacherSnap = await getDoc(teacherRef);
+  if(!teacherSnap.exists()) return alert("المعلم غير موجود");
+
+  const teacher = teacherSnap.data();
+  const total = Number(teacher.totalSalary) || 0;
+  const payments = teacher.payments || [];
+  const paid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const remaining = total - paid;
+  const groups = teacher.groups || [];
+
+  let paymentsRows = "";
+  payments.forEach(p => {
+    paymentsRows += `<tr><td>${p.date}</td><td>${Number(p.amount).toLocaleString()}</td></tr>`;
+  });
+
+  const content = `
   <html>
   <head>
-    <title>تقارير الأساتذة</title>
+    <title>استمارة الأستاذ ${teacher.name}</title>
     <style>
       body { font-family:'Cairo', sans-serif; direction:rtl; margin:20px; }
-      table { width:100%; border-collapse: collapse; }
+      h2, h3 { text-align:center; }
+      table { width:100%; border-collapse: collapse; margin-top:10px; }
       th, td { border:1px solid #000; padding:8px; text-align:center; }
       th { background:#004aad; color:white; }
-      h2 { text-align:center; }
-      @media print {
-        @page { size:A4; margin:20mm; }
-      }
+      @media print { @page { size:A4; margin:20mm; } }
     </style>
   </head>
   <body>
-    <h2>تقارير الأساتذة</h2>
+    <h2>استمارة الأستاذ</h2>
+    <h3>${teacher.name}</h3>
+    <p><strong>المادة:</strong> ${teacher.subject}</p>
+    <p><strong>الهاتف:</strong> ${teacher.phone || '-'}</p>
+    <p><strong>الكروبات:</strong> ${groups.join(", ") || '-'}</p>
+    <p><strong>المبلغ الإجمالي:</strong> ${total.toLocaleString()}</p>
+    <p><strong>المدفوع:</strong> ${paid.toLocaleString()}</p>
+    <p><strong>المتبقي:</strong> ${remaining.toLocaleString()}</p>
+
+    <h3>الدفعات</h3>
     <table>
-      <tr>
-        <th>الاسم</th><th>المادة</th><th>الهاتف</th><th>الكروبات</th>
-        <th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th>
-      </tr>`;
-  rows.forEach(tr=>{
-    const tds = tr.querySelectorAll("td");
-    content += `<tr>
-      <td>${tds[0].innerText}</td>
-      <td>${tds[1].innerText}</td>
-      <td>${tds[2].innerText}</td>
-      <td>${tds[3].innerText}</td>
-      <td>${tds[4].innerText}</td>
-      <td>${tds[5].innerText}</td>
-      <td>${tds[6].innerText}</td>
-    </tr>`;
-  });
-  content += `</table></body></html>`;
+      <tr><th>التاريخ</th><th>المبلغ</th></tr>
+      ${paymentsRows || '<tr><td colspan="2">لا توجد دفعات</td></tr>'}
+    </table>
+  </body>
+  </html>
+  `;
+
   const newWin = window.open("");
   newWin.document.write(content);
   newWin.document.close();
@@ -219,10 +232,11 @@ th { background:#004aad; color:white; }
 button { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; margin:2px; transition:0.3s; }
 button:hover{opacity:0.8;}
 .logout-btn{background:#e53935;color:white;margin-bottom:10px;}
-.print-btn{background:#004aad;color:white;margin-bottom:10px;}
 #addTeacherForm{background:#f1f3f6;padding:15px;border-radius:8px;margin-top:15px; display:block;}
 #addTeacherForm input{padding:5px;margin:5px 0;width:100%;}
 #addTeacherForm button{margin-top:5px;}
+#printFilter{margin-top:10px;}
+#printFilter input{padding:5px;margin:0 5px;}
 </style>
 </head>
 <body>
@@ -233,19 +247,23 @@ button:hover{opacity:0.8;}
 <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
 <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
 
-<!-- نموذج إضافة أستاذ ظاهر دائمًا -->
+<!-- نموذج إضافة أستاذ -->
 <div id="addTeacherForm">
 <h3>إضافة أستاذ جديد</h3>
 <label>الاسم: <input type="text" id="teacherName"></label><br>
 <label>المادة: <input type="text" id="teacherSubject"></label><br>
 <label>الهاتف: <input type="text" id="teacherPhone"></label><br>
 <label>المبلغ الإجمالي: <input type="number" id="teacherSalary"></label><br>
-<label>الكروبات (افصل بين الكروبات بفاصلة): <input type="text" id="teacherGroups"></label><br>
+<label>الكروبات (افصل بينها بفاصلة): <input type="text" id="teacherGroups"></label><br>
 <button onclick="submitAddTeacher()">إضافة</button>
 </div>
 
-<br>
-<button class="print-btn" onclick="printTeachers()">🖨️ طباعة تقارير</button>
+<!-- إطار زمني للطباعة -->
+<div id="printFilter">
+<label>من: <input type="date" id="fromDate"></label>
+<label>إلى: <input type="date" id="toDate"></label>
+<button onclick="alert('يمكن تعديل دالة الطباعة لتصفية حسب التاريخ لاحقاً')">🖨️ طباعة حسب التاريخ</button>
+</div>
 
 <table id="teachersTable">
 <thead>

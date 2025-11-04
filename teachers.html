@@ -98,7 +98,7 @@ async function addPayment(id){
   loadTeachers();
 }
 
-// إضافة كروب جديد
+// إضافة كروب جديد لكل أستاذ
 async function addGroup(id){
   const groupName = prompt("أدخل اسم الكروب الجديد:");
   if(!groupName) return;
@@ -143,6 +143,8 @@ async function submitAddTeacher(){
   const subject = document.getElementById("teacherSubject").value.trim();
   const phone = document.getElementById("teacherPhone").value.trim();
   const totalSalary = parseFloat(document.getElementById("teacherSalary").value);
+  const groupsInput = document.getElementById("teacherGroups").value.trim();
+  const groups = groupsInput ? groupsInput.split(",").map(g => g.trim()) : [];
 
   if(!name || !subject || !phone || isNaN(totalSalary)){
     return alert("الرجاء إدخال جميع البيانات بشكل صحيح");
@@ -154,7 +156,7 @@ async function submitAddTeacher(){
     phone,
     totalSalary,
     payments: [],
-    groups: []
+    groups
   });
 
   loadTeachers();
@@ -162,6 +164,7 @@ async function submitAddTeacher(){
   document.getElementById("teacherSubject").value = "";
   document.getElementById("teacherPhone").value = "";
   document.getElementById("teacherSalary").value = "";
+  document.getElementById("teacherGroups").value = "";
 }
 
 // الطباعة
@@ -226,7 +229,8 @@ button:hover{opacity:0.8;}
     <label>الاسم: <input type="text" id="teacherName"></label><br>
     <label>المادة: <input type="text" id="teacherSubject"></label><br>
     <label>الهاتف: <input type="text" id="teacherPhone"></label><br>
-    <label>إجمالي المستحق: <input type="number" id="teacherSalary"></label><br>
+    <label>المبلغ الإجمالي: <input type="number" id="teacherSalary"></label><br>
+    <label>الكروبات (افصل بين الكروبات بفاصلة): <input type="text" id="teacherGroups"></label><br>
     <button onclick="submitAddTeacher()">إضافة</button>
   </div>
 
@@ -252,6 +256,4 @@ button:hover{opacity:0.8;}
   </table>
 </div>
 
-<footer><p>© 2025 نظام أوما - جميع الحقوق محفوظة</p></footer>
-</body>
-</html>
+<footer><p>© 2025 نظام أوما

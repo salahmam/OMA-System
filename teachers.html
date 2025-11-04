@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الأساتذة - نظام أوما</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+// إعداد Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+  authDomain: "oma-system-30813.firebaseapp.com",
+  projectId: "oma-system-30813",
+  storageBucket: "oma-system-30813.firebasestorage.app",
+  messagingSenderId: "905224657062",
+  appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
+  measurementId: "G-645066LLLP"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// التحقق من تسجيل الدخول
+onAuthStateChanged(auth, (user) => {
+  if(user){
+    document.getElementById('userEmail').innerText = user.email;
+    loadTeachers();
+  } else {
+    alert("يجب تسجيل الدخول أولاً");
+    window.location.href = "login.html";
+  }
+});
+
+// تسجيل الخروج
+window.logout = async function(){
+  try{
+    await signOut(auth);
+    alert("تم تسجيل الخروج بنجاح");
+    window.location.href = "login.html";
+  } catch(error){
+    console.error(error);
+  }
+};
+
+// تحميل وعرض الأساتذة
+async function loadTeachers(){
+  const teachersCol = collection(db, "teachers");
+  const snapshot = await getDocs(teachersCol);
+  const tbody = document.querySelector("#teachersTable tbody");
+  tbody.innerHTML = "";
+
+  snapshot.forEach(docSnap => {
+    const teacher = docSnap.data();
+    const total = teacher.totalSalary || 0;
+    const payments = teacher.payments || [];
+    const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+    const remaining = total - paid;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${teacher.name}</td>
+      <td>${teacher.subject}</td>
+      <td>${total.toLocaleString()}</td>
+      <td>${paid.toLocaleString()}</td>
+      <td>${remaining.toLocaleString()}</td>
+      <td>
+        <button onclick="addPayment('${docSnap.id}')">➕ إضافة دفعة</button>
+        <button onclick="editTeacher('${docSnap.id}')">✏️ تعديل</button>
+        <button onclick="deleteTeacher('${docSnap.id}')">🗑️ حذف</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// إضافة دفعة جديدة
+async function addPayment(id){
+  const amount = parseFloat(prompt("أدخل مبلغ الدفعة:"));
+  if(!amount || isNaN(amount)) return alert("مبلغ غير صالح");
+
+  const date = new Date().toISOString().split('T')[0];
+  const teacherRef = doc(db, "teachers", id);
+  const teacherSnap = await getDoc(teacherRef);
+  const payments = teacherSnap.data().payments || [];
+  payments.push({ amount, date });
+
+  await updateDoc(teacherRef, { payments });
+  loadTeachers();
+}
+
+// تعديل أستاذ
+async function editTeacher(id){
+  const teacherRef = doc(db, "teachers", id);
+  const teacherSnap = await getDoc(teacherRef);
+  if(teacherSnap.exists()){
+    const teacher = teacherSnap.data();
+    const newName = prompt("الاسم:", teacher.name);
+    const newSubject = prompt("المادة:", teacher.subject);
+    const newTotal = parseFloat(prompt("إجمالي المستحق:", teacher.totalSalary));
+    if(newName && newSubject && !isNaN(newTotal)){
+      await updateDoc(teacherRef, { name: newName, subject: newSubject, totalSalary: newTotal });
+      loadTeachers();
+    }
+  }
+}
+
+// حذف أستاذ
+async function deleteTeacher(id){
+  if(confirm("هل أنت متأكد من حذف هذا الأستاذ؟")){
+    await deleteDoc(doc(db, "teachers", id));
+    loadTeachers();
+  }
+}
+
+// إضافة أستاذ جديد
+async function addTeacher(){
+  const name = prompt("اسم الأستاذ:");
+  const subject = prompt("المادة:");
+  const totalSalary = parseFloat(prompt("إجمالي المستحق:"));
+  if(name && subject && !isNaN(totalSalary)){
+    await addDoc(collection(db, "teachers"), { name, subject, totalSalary, payments: [] });
+    loadTeachers();
+  }
+}
+
+// الطباعة مع تحديد إطار زمني
+function printTeachers(){
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  const rows = document.querySelectorAll("#teachersTable tbody tr");
+
+  let printContent = `<h2>تقارير الأساتذة</h2><table border="1" style="width:100%;border-collapse:collapse;">
+    <tr>
+      <th>الاسم</th>
+      <th>المادة</th>
+      <th>المبلغ الإجمالي</th>
+      <th>المدفوع</th>
+      <th>المتبقي</th>
+    </tr>`;
+
+  rows.forEach(tr=>{
+    const tds = tr.querySelectorAll("td");
+    const teacherName = tds[0].innerText;
+    const subject = tds[1].innerText;
+    const total = parseFloat(tds[2].innerText.replace(/,/g,''));
+    const paid = parseFloat(tds[3].innerText.replace(/,/g,''));
+    const remaining = parseFloat(tds[4].innerText.replace(/,/g,''));
+    
+    // فلترة المدفوع حسب التاريخ إذا تم تحديده
+    if(startDate || endDate){
+      // في هذه النسخة الطباعة ستقوم بعرض إجمالي المدفوع كما هو
+      // لاحقاً يمكن تعديل لحساب المدفوع داخل الفترة فقط
+    }
+
+    printContent += `<tr>
+      <td>${teacherName}</td>
+      <td>${subject}</td>
+      <td>${total.toLocaleString()}</td>
+      <td>${paid.toLocaleString()}</td>
+      <td>${remaining.toLocaleString()}</td>
+    </tr>`;
+  });
+
+  printContent += "</table>";
+  const newWin = window.open("");
+  newWin.document.write(printContent);
+  newWin.print();
+}
+</script>
+
+<style>
+body { font-family:'Cairo',sans-serif; background:linear-gradient(180deg,#fff,#eaf1ff); margin:0; color:#1a1a1a; direction:rtl; }
+header { background:#004aad; color:white; padding:15px; text-align:center; }
+.container { max-width:1000px; margin:auto; padding:20px; background:#fff; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+table { width:100%; border-collapse:collapse; margin-top:20px; }
+th, td { padding:10px; border:1px solid #ddd; text-align:center; }
+th { background:#004aad; color:white; }
+button { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; margin:2px; transition:0.3s; }
+button:hover{opacity:0.8;}
+.logout-btn{background:#e53935;color:white;margin-bottom:10px;}
+.add-btn, .print-btn{background:#004aad;color:white;margin-bottom:10px;}
+footer{text-align:center;margin-top:30px;color:#777;}
+.date-input{padding:5px 10px;margin-left:5px;border-radius:5px;border:1px solid #ccc;}
+</style>
+</head>
+<body>
+<header><h1>إدارة الأساتذة - نظام أوما</h1></header>
+
+<div class="container">
+  <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
+  <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+  <button class="add-btn" onclick="addTeacher()">➕ إضافة أستاذ</button>
+  <br><br>
+  <label>من: <input type="date" id="startDate" class="date-input"></label>
+  <label>إلى: <input type="date" id="endDate" class="date-input"></label>
+  <button class="print-btn" onclick="printTeachers()">🖨️ طباعة</button>
+
+  <table id="teachersTable">
+    <thead>
+      <tr>
+        <th>الاسم</th>
+        <th>المادة</th>
+        <th>المبلغ الإجمالي</th>
+        <th>المدفوع</th>
+        <th>المتبقي</th>
+        <th>الإجراءات</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- سيتم ملؤه ديناميكياً -->
+    </tbody>
+  </table>
+</div>
+
+<footer><p>© 2025 نظام أوما - جميع الحقوق محفوظة</p></footer>
+</body>
+</html>

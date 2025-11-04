@@ -119,16 +119,6 @@ async function deleteTeacher(id){
   }
 }
 
-// فتح نموذج إضافة أستاذ
-function openAddTeacherForm(){
-  document.getElementById("addTeacherForm").style.display = "block";
-}
-
-// إغلاق نموذج إضافة أستاذ
-function cancelAddTeacher(){
-  document.getElementById("addTeacherForm").style.display = "none";
-}
-
 // إرسال بيانات نموذج إضافة أستاذ
 async function submitAddTeacher(){
   const name = document.getElementById("teacherName").value.trim();
@@ -147,7 +137,6 @@ async function submitAddTeacher(){
   });
 
   loadTeachers();
-  cancelAddTeacher();
   document.getElementById("teacherName").value = "";
   document.getElementById("teacherSubject").value = "";
   document.getElementById("teacherSalary").value = "";
@@ -198,7 +187,7 @@ button:hover{opacity:0.8;}
 .logout-btn{background:#e53935;color:white;margin-bottom:10px;}
 .add-btn, .print-btn{background:#004aad;color:white;margin-bottom:10px;}
 .date-input{padding:5px 10px;margin-left:5px;border-radius:5px;border:1px solid #ccc;}
-#addTeacherForm{background:#f1f3f6;padding:15px;border-radius:8px;margin-top:15px; display:none;}
+#addTeacherForm{background:#f1f3f6;padding:15px;border-radius:8px;margin-top:15px; display:block;}
 #addTeacherForm input{padding:5px;margin:5px 0;width:100%;}
 #addTeacherForm button{margin-top:5px;}
 </style>
@@ -210,16 +199,14 @@ button:hover{opacity:0.8;}
 <div class="container">
   <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
   <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
-  <button class="add-btn" onclick="openAddTeacherForm()">➕ إضافة أستاذ</button>
 
-  <!-- نموذج إضافة أستاذ -->
+  <!-- نموذج إضافة أستاذ ظاهر دائماً -->
   <div id="addTeacherForm">
     <h3>إضافة أستاذ جديد</h3>
     <label>الاسم: <input type="text" id="teacherName"></label><br>
     <label>المادة: <input type="text" id="teacherSubject"></label><br>
     <label>إجمالي المستحق: <input type="number" id="teacherSalary"></label><br>
     <button onclick="submitAddTeacher()">إضافة</button>
-    <button onclick="cancelAddTeacher()">إلغاء</button>
   </div>
 
   <br>

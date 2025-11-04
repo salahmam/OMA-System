@@ -1,73 +1,105 @@
 /* التصميم العام */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Cairo', sans-serif;
     background: linear-gradient(180deg, #ffffff, #f7f9fb);
     color: #1a1a1a;
-    margin: 0;
+    line-height: 1.6;
     direction: rtl;
+    overflow-x: hidden; /* لمنع أي تحريك زائد يسبب تمرير أفقي */
 }
 
 /* الرأس */
 header {
-    background-color: #004aad; /* أزرق غامق */
+    background-color: #004aad;
     color: white;
     text-align: center;
-    padding: 20px;
+    padding: 20px 15px;
+    animation: slideDown 1s ease forwards;
 }
 
 header h1 {
-    margin: 0;
-    font-size: 26px;
+    font-size: 28px;
+    margin-bottom: 10px;
+    animation: fadeIn 1.5s ease forwards;
 }
 
 nav {
-    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    animation: fadeIn 2s ease forwards;
 }
 
 nav a {
     color: #fff;
     text-decoration: none;
-    margin: 0 12px;
     font-weight: bold;
-    transition: color 0.3s ease;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
 }
 
 nav a:hover {
-    color: #ffcc33; /* ذهبي */
+    background-color: #ffcc33;
+    color: #004aad;
+    transform: translateY(-3px);
 }
 
 /* القسم الرئيسي */
 .intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding: 60px 20px;
+    padding: 80px 20px;
     background: linear-gradient(135deg, #e6f0ff, #ffffff);
 }
 
 .intro h2 {
-    font-size: 28px;
+    font-size: 32px;
     color: #004aad;
+    margin-bottom: 15px;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards;
+    animation-delay: 0.5s;
 }
 
 .intro p {
     font-size: 18px;
     color: #333;
-    margin-bottom: 25px;
+    max-width: 700px;
+    margin-bottom: 30px;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards;
+    animation-delay: 1s;
 }
 
 .intro button {
     background-color: #004aad;
     color: #fff;
     border: none;
-    padding: 12px 30px;
+    padding: 14px 36px;
     font-size: 16px;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards;
+    animation-delay: 1.5s;
 }
 
 .intro button:hover {
     background-color: #ffcc33;
     color: #004aad;
+    transform: scale(1.1);
 }
 
 /* التذييل */
@@ -75,9 +107,67 @@ footer {
     background-color: #004aad;
     color: white;
     text-align: center;
-    padding: 15px 0;
+    padding: 20px 15px;
     font-size: 14px;
-    position: relative;
-    bottom: 0;
     width: 100%;
+    animation: fadeIn 2s ease forwards;
+}
+
+/* الرسوم المتحركة */
+@keyframes fadeIn {
+    0% {opacity: 0;}
+    100% {opacity: 1;}
+}
+
+@keyframes slideDown {
+    0% {transform: translateY(-50px); opacity: 0;}
+    100% {transform: translateY(0); opacity: 1;}
+}
+
+@keyframes fadeUp {
+    0% {opacity: 0; transform: translateY(20px);}
+    100% {opacity: 1; transform: translateY(0);}
+}
+
+/* تجاوب مع الأجهزة */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 24px;
+    }
+
+    nav {
+        flex-direction: column;
+    }
+
+    .intro h2 {
+        font-size: 26px;
+    }
+
+    .intro p {
+        font-size: 16px;
+    }
+
+    .intro button {
+        padding: 12px 28px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 22px;
+    }
+
+    .intro h2 {
+        font-size: 22px;
+    }
+
+    .intro p {
+        font-size: 14px;
+    }
+
+    .intro button {
+        padding: 10px 24px;
+        font-size: 14px;
+    }
 }

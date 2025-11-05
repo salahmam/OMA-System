@@ -11,12 +11,13 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID",
+      apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+      authDomain: "oma-system-30813.firebaseapp.com",
+      projectId: "oma-system-30813",
+      storageBucket: "oma-system-30813.appspot.com",
+      messagingSenderId: "905224657062",
+      appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
+      measurementId: "G-645066LLLP"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -41,21 +42,46 @@
     window.goToStudents = ()=>{ window.location.href="students-v2.html"; }
     window.goToTeachers = ()=>{ window.location.href="teachers.html"; }
     window.goToLessons = ()=>{ window.location.href="lessons.html"; }
+    window.goToReports = ()=>{ window.location.href="reports.html"; }
+    window.goToStatistics = ()=>{ window.location.href="statistics.html"; }
+    window.goToSettings = ()=>{ window.location.href="settings.html"; }
   </script>
 
   <style>
     body { font-family:'Cairo',sans-serif; margin:0; direction:rtl; background:#f5f9ff; color:#1a1a1a; }
     header { background:#004aad; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+    header h1{ margin:0; font-size:22px; }
     .logout-btn{ background:#e53935; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; }
-    .container{ max-width:800px; margin:auto; padding:20px; }
-    .dashboard-buttons button{ width:100%; padding:15px; margin:10px 0; font-size:18px; cursor:pointer; border:none; border-radius:8px; }
+    .container{ max-width:1000px; margin:auto; padding:20px; }
+    .dashboard-buttons{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top:20px;
+    }
+    .dashboard-buttons button{
+      padding:20px;
+      font-size:18px;
+      cursor:pointer;
+      border:none;
+      border-radius:10px;
+      color:white;
+      transition:0.3s;
+    }
     .students-btn{ background:#ffcc33; }
     .teachers-btn{ background:#33b5ff; }
     .lessons-btn{ background:#4caf50; }
+    .reports-btn{ background:#ff5722; }
+    .statistics-btn{ background:#9c27b0; }
+    .settings-btn{ background:#607d8b; }
+    .dashboard-buttons button:hover{ opacity:0.85; }
+    .info{ margin-top:30px; font-size:18px; background:#f1f3f6; padding:20px; border-radius:10px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; }
+    .info div{ background:#fff; padding:15px; border-radius:8px; box-shadow:0 3px 6px rgba(0,0,0,0.1); text-align:center; }
     footer{ text-align:center; color:#777; margin-top:30px; font-size:14px; }
   </style>
 </head>
 <body>
+
 <header>
   <h1>لوحة التحكم - نظام أوما</h1>
   <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
@@ -64,15 +90,41 @@
 <div class="container">
   <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
 
+  <!-- أزرار الوصول السريع -->
   <div class="dashboard-buttons">
     <button class="students-btn" onclick="goToStudents()">📚 الطلاب</button>
     <button class="teachers-btn" onclick="goToTeachers()">👩‍🏫 الأساتذة</button>
     <button class="lessons-btn" onclick="goToLessons()">📖 الدروس</button>
+    <button class="reports-btn" onclick="goToReports()">📝 التقارير</button>
+    <button class="statistics-btn" onclick="goToStatistics()">📊 الإحصائيات</button>
+    <button class="settings-btn" onclick="goToSettings()">⚙️ الإعدادات</button>
   </div>
+
+  <!-- معلومات سريعة -->
+  <div class="info">
+    <div>
+      <h3>عدد الطلاب</h3>
+      <p>جاري التحميل...</p>
+    </div>
+    <div>
+      <h3>عدد الأساتذة</h3>
+      <p>جاري التحميل...</p>
+    </div>
+    <div>
+      <h3>الدروس اليوم</h3>
+      <p>جاري التحميل...</p>
+    </div>
+    <div>
+      <h3>إجمالي الدفعات</h3>
+      <p>جاري التحميل...</p>
+    </div>
+  </div>
+
 </div>
 
 <footer>
   <p>© 2025 نظام أوما - جميع الحقوق محفوظة</p>
 </footer>
+
 </body>
 </html>

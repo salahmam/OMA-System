@@ -1,128 +1,154 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>تسجيل الدخول - نظام أوما</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 
   <style>
     body {
       font-family: 'Cairo', sans-serif;
+      background: linear-gradient(135deg, #ffffff, #d7e7ff);
       margin: 0;
-      background: linear-gradient(180deg, #eaf1ff, #ffffff);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #1a1a1a;
+      direction: rtl;
+      overflow-x: hidden;
+    }
+
+    header {
+      background-color: #004aad;
+      color: #fff;
+      padding: 15px 0;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 1s ease-in-out;
     }
 
     .login-container {
-      background: #fff;
-      padding: 40px 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 80vh;
+      animation: fadeIn 1.2s ease-in-out;
+    }
+
+    .login-box {
+      background-color: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      width: 320px;
       text-align: center;
+      animation: slideUp 0.8s ease-in-out;
     }
 
-    .login-container h1 {
-      margin-bottom: 20px;
+    .login-box h2 {
       color: #004aad;
-      font-size: 26px;
+      margin-bottom: 25px;
+      font-size: 24px;
     }
 
-    .login-container input {
-      width: 100%;
-      padding: 12px 15px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-      outline: none;
-      transition: 0.3s;
-    }
-
-    .login-container input:focus {
-      border-color: #004aad;
-      box-shadow: 0 0 5px rgba(0, 74, 173, 0.3);
-    }
-
-    .login-container button {
+    .login-box input {
       width: 100%;
       padding: 12px;
-      margin-top: 20px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      text-align: right;
+      transition: all 0.3s ease;
+    }
+
+    .login-box input:focus {
+      border-color: #004aad;
+      box-shadow: 0 0 5px rgba(0, 74, 173, 0.3);
+      outline: none;
+    }
+
+    .login-box button {
+      width: 100%;
+      background-color: #004aad;
+      color: #fff;
       border: none;
-      border-radius: 8px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 17px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .login-box button:hover {
+      background-color: #ffcc33;
+      color: #004aad;
+      transform: scale(1.05);
+    }
+
+    footer {
       background-color: #004aad;
       color: white;
-      font-size: 18px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    .login-container button:hover {
-      background-color: #00337a;
-    }
-
-    .login-footer {
-      margin-top: 15px;
+      text-align: center;
+      padding: 10px;
       font-size: 14px;
-      color: #777;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
   </style>
 </head>
+
 <body>
+  <header>نظام أوما لإدارة المعاهد</header>
 
   <div class="login-container">
-    <h1>نظام أوما</h1>
-    <p>سجل الدخول للمتابعة</p>
-
-    <form id="loginForm" onsubmit="event.preventDefault(); loginUser();">
-      <input type="email" id="emailInput" placeholder="البريد الإلكتروني" required>
-      <input type="password" id="passwordInput" placeholder="كلمة المرور" required>
-      <button type="submit">تسجيل الدخول</button>
-    </form>
-
-    <div class="login-footer">
-      © 2025 نظام أوما - جميع الحقوق محفوظة
+    <div class="login-box">
+      <h2>تسجيل الدخول</h2>
+      <input id="email" type="email" placeholder="البريد الإلكتروني" />
+      <input id="password" type="password" placeholder="كلمة المرور" />
+      <button id="loginBtn">تسجيل الدخول</button>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+  <footer>© 2025 نظام أوما - جميع الحقوق محفوظة</footer>
 
-    // إعدادات مشروع Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
-      authDomain: "oma-system-30813.firebaseapp.com",
-      projectId: "oma-system-30813",
-      storageBucket: "oma-system-30813.appspot.com",
-      messagingSenderId: "905224657062",
-      appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
-      measurementId: "G-645066LLLP"
-    };
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+  <!-- Firebase Config -->
+  <script src="firebase.js"></script>
 
-    // دالة تسجيل الدخول
-    async function loginUser() {
-      const email = document.getElementById("emailInput").value;
-      const password = document.getElementById("passwordInput").value;
+  <!-- Login Logic -->
+  <script>
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (!email || !password) {
+        alert('يرجى إدخال البريد الإلكتروني وكلمة المرور');
+        return;
+      }
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        // بعد تسجيل الدخول → لوحة التحكم
-        window.location.href = "dashboard.html";
-      } catch(error) {
-        alert("خطأ في تسجيل الدخول: " + error.message);
+        const user = await auth.signInWithEmailAndPassword(email, password);
+        alert('تم تسجيل الدخول بنجاح ✅');
+        window.location.href = "dashboard.html"; // سينتقل إلى لوحة التحكم
+      } catch (error) {
+        alert('❌ خطأ: ' + error.message);
       }
-    }
+    });
   </script>
-
 </body>
 </html>

@@ -9,7 +9,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
@@ -27,12 +27,13 @@ const db = getFirestore(app);
 
 let editingLessonId = null;
 
+// تحقق من تسجيل الدخول
 onAuthStateChanged(auth, user => {
   if(user){
     document.getElementById('userEmail').innerText = user.email;
-    loadTeachers();
     loadGrades();
     loadGroups();
+    loadTeachers();
     loadLessons();
   } else {
     window.location.href = "login.html";
@@ -42,16 +43,6 @@ onAuthStateChanged(auth, user => {
 window.logout = async function(){
   try { await signOut(auth); window.location.href = "login.html"; }
   catch(e){ console.error(e); }
-}
-
-// تحميل بيانات الأساتذة
-let teachersList = [];
-async function loadTeachers(){
-  const snapshot = await getDocs(collection(db,"teachers"));
-  teachersList = snapshot.docs.map(d=>d.data().name);
-  const select = document.getElementById('teacherSelect');
-  select.innerHTML = "";
-  teachersList.forEach(t=>{ let opt = document.createElement("option"); opt.value=t; opt.textContent=t; select.appendChild(opt); });
 }
 
 // تحميل المراحل
@@ -74,6 +65,16 @@ async function loadGroups(){
   groupsList.forEach(g=>{ let opt = document.createElement("option"); opt.value=g; opt.textContent=g; select.appendChild(opt); });
 }
 
+// تحميل الأساتذة
+let teachersList = [];
+async function loadTeachers(){
+  const snapshot = await getDocs(collection(db,"teachers"));
+  teachersList = snapshot.docs.map(d=>d.data().name);
+  const select = document.getElementById('teacherSelect');
+  select.innerHTML = "";
+  teachersList.forEach(t=>{ let opt = document.createElement("option"); opt.value=t; opt.textContent=t; select.appendChild(opt); });
+}
+
 // إضافة درس أو حفظ التعديل
 window.addLesson = async function(){
   const subject = document.getElementById('subjectInput').value;
@@ -83,7 +84,7 @@ window.addLesson = async function(){
   const day = document.getElementById('dayInput').value;
   const startTime = document.getElementById('startTime').value;
   const endTime = document.getElementById('endTime').value;
-  const studentsCount = Number(document.getElementById('studentsCount').value);
+  const studentsCount = parseInt(document.getElementById('studentsCount').value) || 0;
 
   if(!subject || !teacher || !grade || !group || !day || !startTime || !endTime){
     alert("الرجاء ملء جميع الحقول");
@@ -91,17 +92,11 @@ window.addLesson = async function(){
   }
 
   if(editingLessonId){
-    await updateDoc(doc(db,"lessons",editingLessonId),{
-      subject, teacher, grade, group, day, startTime, endTime, studentsCount
-    });
-    alert("تم تعديل الدرس بنجاح");
+    await updateDoc(doc(db,"lessons",editingLessonId),{subject,teacher,grade,group,day,startTime,endTime,studentsCount});
     editingLessonId = null;
     document.getElementById('addLessonBtn').textContent = "➕ إضافة درس";
   } else {
-    await addDoc(collection(db,"lessons"),{
-      subject, teacher, grade, group, day, startTime, endTime, studentsCount
-    });
-    alert("تم إضافة الدرس بنجاح");
+    await addDoc(collection(db,"lessons"),{subject,teacher,grade,group,day,startTime,endTime,studentsCount});
   }
 
   document.getElementById('lessonForm').reset();
@@ -167,22 +162,13 @@ window.editLesson = function(id){
 
 // طباعة الدروس
 window.printLessons = function(){
-  const type = document.getElementById('printType').value;
-  const filterValue = document.getElementById('printFilter').value.toLowerCase();
   let rows = Array.from(document.querySelectorAll("#lessonsTable tbody tr"));
-  let filteredRows = [];
-
-  if(type==="all"){ filteredRows = rows; }
-  else if(type==="group"){ filteredRows = rows.filter(r=>r.children[3].textContent.toLowerCase()===filterValue); }
-  else if(type==="teacher"){ filteredRows = rows.filter(r=>r.children[1].textContent.toLowerCase()===filterValue); }
-  else if(type==="student"){ filteredRows = rows.filter(r=>r.children[6].textContent.toLowerCase()===filterValue); }
-
-  let printWindow = window.open('','طباعة الدروس','width=800,height=600');
+  let printWindow = window.open('','طباعة الدروس','width=900,height=600');
   printWindow.document.write('<html><head><title>طباعة الدروس</title>');
   printWindow.document.write('<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#004aad;color:white;}</style></head><body>');
   printWindow.document.write('<h2 style="text-align:center">جدول الدروس</h2>');
   printWindow.document.write('<table><tr><th>المادة</th><th>الأستاذ</th><th>المرحلة</th><th>الكروب</th><th>اليوم</th><th>الوقت</th><th>عدد الطلاب</th></tr>');
-  filteredRows.forEach(r=>{ printWindow.document.write('<tr>'+r.innerHTML+'</tr>'); });
+  rows.forEach(r=>{ printWindow.document.write('<tr>'+r.innerHTML+'</tr>'); });
   printWindow.document.write('</table></body></html>');
   printWindow.document.close();
   printWindow.print();
@@ -191,7 +177,6 @@ window.printLessons = function(){
 // فلترة مباشرة
 const searchInput = document.getElementById('searchInput');
 const searchField = document.getElementById('searchField');
-
 searchInput.addEventListener('input', filterLessons);
 searchField.addEventListener('change', filterLessons);
 
@@ -199,7 +184,6 @@ function filterLessons(){
   const term = searchInput.value.toLowerCase();
   const field = searchField.value;
   const rows = document.querySelectorAll('#lessonsTable tbody tr');
-
   rows.forEach(row=>{
     let cellValue = '';
     switch(field){
@@ -272,15 +256,8 @@ footer{text-align:center;padding:15px;color:#777;font-size:14px;}
 </div>
 
 <div class="print-section">
-<h3>طباعة الجدول</h3>
-<select id="printType">
-<option value="all">كامل الجدول</option>
-<option value="group">جدول كروب</option>
-<option value="teacher">جدول أستاذ</option>
-<option value="student">جدول طالب</option>
-</select>
-<input type="text" id="printFilter" placeholder="أدخل الاسم أو الكروب">
-<button onclick="printLessons()">🖨️ طباعة</button>
+<h3>طباعة الدروس</h3>
+<button onclick="printLessons()">🖨️ طباعة كامل الجدول</button>
 </div>
 
 <div class="table-container">

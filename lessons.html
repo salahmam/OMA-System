@@ -11,14 +11,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/fireba
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
+// **Firebase Config للمشروع الثاني**
 const firebaseConfig = {
-  apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
-  authDomain: "oma-system-30813.firebaseapp.com",
-  projectId: "oma-system-30813",
-  storageBucket: "oma-system-30813.firebasestorage.app",
-  messagingSenderId: "905224657062",
-  appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
-  measurementId: "G-645066LLLP"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -46,33 +47,42 @@ window.logout = async function(){
 }
 
 // تحميل المراحل
-let gradesList = [];
 async function loadGrades(){
   const snapshot = await getDocs(collection(db,"grades"));
-  gradesList = snapshot.docs.map(d=>d.data().name);
   const select = document.getElementById('gradeSelect');
   select.innerHTML = "";
-  gradesList.forEach(g=>{ let opt = document.createElement("option"); opt.value=g; opt.textContent=g; select.appendChild(opt); });
+  snapshot.docs.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d.data().name;
+    opt.textContent = d.data().name;
+    select.appendChild(opt);
+  });
 }
 
 // تحميل الكروبات
-let groupsList = [];
 async function loadGroups(){
   const snapshot = await getDocs(collection(db,"groups"));
-  groupsList = snapshot.docs.map(d=>d.data().name);
   const select = document.getElementById('groupSelect');
   select.innerHTML = "";
-  groupsList.forEach(g=>{ let opt = document.createElement("option"); opt.value=g; opt.textContent=g; select.appendChild(opt); });
+  snapshot.docs.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d.data().name;
+    opt.textContent = d.data().name;
+    select.appendChild(opt);
+  });
 }
 
 // تحميل الأساتذة
-let teachersList = [];
 async function loadTeachers(){
   const snapshot = await getDocs(collection(db,"teachers"));
-  teachersList = snapshot.docs.map(d=>d.data().name);
   const select = document.getElementById('teacherSelect');
   select.innerHTML = "";
-  teachersList.forEach(t=>{ let opt = document.createElement("option"); opt.value=t; opt.textContent=t; select.appendChild(opt); });
+  snapshot.docs.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d.data().name;
+    opt.textContent = d.data().name;
+    select.appendChild(opt);
+  });
 }
 
 // إضافة درس أو حفظ التعديل
@@ -162,8 +172,8 @@ window.editLesson = function(id){
 
 // طباعة الدروس
 window.printLessons = function(){
-  let rows = Array.from(document.querySelectorAll("#lessonsTable tbody tr"));
-  let printWindow = window.open('','طباعة الدروس','width=900,height=600');
+  const rows = Array.from(document.querySelectorAll("#lessonsTable tbody tr"));
+  const printWindow = window.open('','طباعة الدروس','width=900,height=600');
   printWindow.document.write('<html><head><title>طباعة الدروس</title>');
   printWindow.document.write('<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#004aad;color:white;}</style></head><body>');
   printWindow.document.write('<h2 style="text-align:center">جدول الدروس</h2>');

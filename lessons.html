@@ -11,7 +11,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/fireba
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-// 🔗 إعدادات Firebase (استخدم نفس القيم من مشروعك)
+// 🔗 إعدادات Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
   authDomain: "oma-system-30813.firebaseapp.com",
@@ -61,7 +61,7 @@ async function loadGrades(instituteId) {
   const q = query(collection(db, "grades"), where("instituteId", "==", instituteId));
   const snapshot = await getDocs(q);
   const select = document.getElementById('gradeSelect');
-  select.innerHTML = "";
+  select.innerHTML = "<option value=''>اختر المرحلة</option>";
   snapshot.docs.forEach(d => {
     const opt = document.createElement("option");
     opt.value = d.data().name;
@@ -75,7 +75,7 @@ async function loadGroups(instituteId) {
   const q = query(collection(db, "groups"), where("instituteId", "==", instituteId));
   const snapshot = await getDocs(q);
   const select = document.getElementById('groupSelect');
-  select.innerHTML = "";
+  select.innerHTML = "<option value=''>اختر الكروب</option>";
   snapshot.docs.forEach(d => {
     const opt = document.createElement("option");
     opt.value = d.data().name;
@@ -89,7 +89,7 @@ async function loadTeachers(instituteId) {
   const q = query(collection(db, "teachers"), where("instituteId", "==", instituteId));
   const snapshot = await getDocs(q);
   const select = document.getElementById('teacherSelect');
-  select.innerHTML = "";
+  select.innerHTML = "<option value=''>اختر الأستاذ</option>";
   snapshot.docs.forEach(d => {
     const opt = document.createElement("option");
     opt.value = d.data().name;
@@ -104,7 +104,7 @@ window.addLesson = async function () {
   const teacher = document.getElementById('teacherSelect').value;
   const grade = document.getElementById('gradeSelect').value;
   const group = document.getElementById('groupSelect').value;
-  const day = document.getElementById('dayInput').value;
+  const day = document.getElementById('daySelect').value;
   const startTime = document.getElementById('startTime').value;
   const endTime = document.getElementById('endTime').value;
   const studentsCount = parseInt(document.getElementById('studentsCount').value) || 0;
@@ -124,7 +124,7 @@ window.addLesson = async function () {
   } else {
     await addDoc(collection(db, "lessons"), {
       subject, teacher, grade, group, day, startTime, endTime, studentsCount,
-      instituteId: currentUser.uid  // 👈 ربط الدرس بالمعهد الحالي
+      instituteId: currentUser.uid
     });
     alert("✅ تم إضافة الدرس بنجاح");
   }
@@ -177,7 +177,7 @@ window.editLesson = async function (id) {
   document.getElementById('teacherSelect').value = data.teacher;
   document.getElementById('gradeSelect').value = data.grade;
   document.getElementById('groupSelect').value = data.group;
-  document.getElementById('dayInput').value = data.day;
+  document.getElementById('daySelect').value = data.day;
   document.getElementById('startTime').value = data.startTime;
   document.getElementById('endTime').value = data.endTime;
   document.getElementById('studentsCount').value = data.studentsCount;
@@ -206,17 +206,17 @@ header{background:#004aad;color:white;padding:15px;display:flex;justify-content:
 header h1{margin:0;font-size:22px;}
 header .logout-btn{background:#e53935;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer;}
 header .logout-btn:hover{background:#c62828;}
-.container{max-width:1200px;margin:auto;padding:20px;}
-form{background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);margin-bottom:20px;}
-form input, form select{padding:8px;margin:5px;border-radius:5px;border:1px solid #ccc;}
-form button{background:#004aad;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;transition:0.3s;}
+.container{max-width:900px;margin:auto;padding:20px;}
+form{background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+form h3{grid-column:1/-1;text-align:center;margin-bottom:10px;}
+form input, form select{padding:10px;border-radius:5px;border:1px solid #ccc;}
+form button{grid-column:1/-1;background:#004aad;color:white;border:none;padding:10px;border-radius:5px;cursor:pointer;transition:0.3s;}
 form button:hover{background:#00337a;}
 .table-container{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;margin-bottom:20px;}
 th,td{padding:10px;border:1px solid #ddd;text-align:center;}
 th{background:#004aad;color:white;}
-.print-section, .search-section{margin-bottom:20px;}
-footer{text-align:center;padding:15px;color:#777;font-size:14px;}
+.print-section{margin-bottom:20px;text-align:center;}
 </style>
 </head>
 <body>
@@ -234,9 +234,18 @@ footer{text-align:center;padding:15px;color:#777;font-size:14px;}
 <select id="teacherSelect"></select>
 <select id="gradeSelect"></select>
 <select id="groupSelect"></select>
-<input type="text" id="dayInput" placeholder="اليوم">
-<input type="time" id="startTime">
-<input type="time" id="endTime">
+<select id="daySelect">
+  <option value="">اختر اليوم</option>
+  <option value="السبت">السبت</option>
+  <option value="الأحد">الأحد</option>
+  <option value="الاثنين">الاثنين</option>
+  <option value="الثلاثاء">الثلاثاء</option>
+  <option value="الأربعاء">الأربعاء</option>
+  <option value="الخميس">الخميس</option>
+  <option value="الجمعة">الجمعة</option>
+</select>
+<input type="time" id="startTime" placeholder="بداية الدرس">
+<input type="time" id="endTime" placeholder="نهاية الدرس">
 <input type="number" id="studentsCount" placeholder="عدد الطلاب">
 <button type="submit" id="addLessonBtn">➕ إضافة درس</button>
 </form>

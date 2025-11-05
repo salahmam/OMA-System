@@ -10,6 +10,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
@@ -21,25 +22,77 @@ const firebaseConfig = {
   measurementId: "G-645066LLLP"
 };
 
+// تهيئة Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-onAuthStateChanged(auth, (user) => {
+// التحقق من المستخدم
+onAuthStateChanged(auth, user => {
   if(user){
     document.getElementById('userEmail').innerText = user.email;
+    loadDashboard();
   } else {
-    alert("يجب تسجيل الدخول أولاً");
     window.location.href = "login.html";
   }
 });
 
 window.logout = async function(){
-  try{
+  try {
     await signOut(auth);
-    alert("تم تسجيل الخروج");
     window.location.href = "login.html";
-  } catch(error){
-    console.error(error);
+  } catch(e){
+    console.error(e);
+  }
+}
+
+// تحميل البيانات وعرضها
+async function loadDashboard(){
+  // الإحصاءات
+  const studentsSnapshot = await getDocs(collection(db, "students"));
+  const teachersSnapshot = await getDocs(collection(db, "teachers"));
+  const lessonsSnapshot = await getDocs(collection(db, "lessons"));
+  
+  document.getElementById('totalStudents').innerText = studentsSnapshot.size;
+  document.getElementById('totalTeachers').innerText = teachersSnapshot.size;
+  document.getElementById('lessonsToday').innerText = lessonsSnapshot.size;
+
+  // المصروفات: جمع المدفوع لكل الطلاب
+  let totalPayments = 0;
+  studentsSnapshot.forEach(doc => {
+    const data = doc.data();
+    if(data.paid) totalPayments += Number(data.paid);
+  });
+  document.getElementById('totalPayments').innerText = totalPayments + " د.ع";
+
+  // ملء الجدول الرئيسي بالطلاب (كمثال)
+  const tbody = document.querySelector("#mainTable tbody");
+  tbody.innerHTML = ""; // مسح القديم
+  studentsSnapshot.forEach(doc => {
+    const data = doc.data();
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${data.name}</td>
+      <td>طالب</td>
+      <td>${data.grade || "-"}</td>
+      <td>${data.phone || "-"}</td>
+      <td>${data.paid || 0} / ${data.total || 0}</td>
+      <td>
+        <button onclick="editStudent('${doc.id}')">تعديل</button>
+        <button onclick="deleteStudent('${doc.id}')">حذف</button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+// وظائف تجريبية للتعديل والحذف
+window.editStudent = function(id){
+  alert("فتح صفحة تعديل الطالب: " + id);
+}
+window.deleteStudent = function(id){
+  if(confirm("هل تريد حذف هذا الطالب؟")){
+    alert("سيتم حذف الطالب: " + id);
   }
 }
 </script>
@@ -78,7 +131,6 @@ footer { text-align:center; padding:15px; color:#777; font-size:14px; }
 
 <div class="container">
 
-  <!-- أزرار الأقسام الرئيسية -->
   <div class="dashboard-buttons">
     <button onclick="window.location.href='students-v2.html'">📚 الطلاب</button>
     <button onclick="window.location.href='teachers.html'">👩‍🏫 الأساتذة</button>
@@ -88,41 +140,25 @@ footer { text-align:center; padding:15px; color:#777; font-size:14px; }
     <button onclick="window.location.href='settings.html'">⚙️ الإعدادات</button>
   </div>
 
-  <!-- لوحة إحصاءات سريعة -->
   <div class="stats">
-    <div class="stat-box">
-      <h3>عدد الطلاب</h3>
-      <p id="totalStudents">0</p>
-    </div>
-    <div class="stat-box">
-      <h3>عدد الأساتذة</h3>
-      <p id="totalTeachers">0</p>
-    </div>
-    <div class="stat-box">
-      <h3>الدروس اليوم</h3>
-      <p id="lessonsToday">0</p>
-    </div>
-    <div class="stat-box">
-      <h3>إجمالي المصروفات</h3>
-      <p id="totalPayments">0</p>
-    </div>
+    <div class="stat-box"><h3>عدد الطلاب</h3><p id="totalStudents">0</p></div>
+    <div class="stat-box"><h3>عدد الأساتذة</h3><p id="totalTeachers">0</p></div>
+    <div class="stat-box"><h3>الدروس اليوم</h3><p id="lessonsToday">0</p></div>
+    <div class="stat-box"><h3>إجمالي المصروفات</h3><p id="totalPayments">0</p></div>
   </div>
 
-  <!-- إجراءات سريعة -->
   <div class="quick-actions">
     <button onclick="window.location.href='add-student.html'">➕ إضافة طالب</button>
     <button onclick="window.location.href='add-teacher.html'">➕ إضافة أستاذ</button>
     <button onclick="window.location.href='add-lesson.html'">➕ إضافة درس</button>
   </div>
 
-  <!-- البحث / الفلترة -->
   <div class="search-filter">
     <input type="text" placeholder="بحث بالاسم أو الرقم" id="searchInput">
     <input type="text" placeholder="فلترة حسب المرحلة" id="filterStage">
     <button onclick="alert('يمكن ربط الفلترة بالجدول لاحقاً')">فلترة</button>
   </div>
 
-  <!-- جدول بيانات رئيسي -->
   <div class="table-container">
     <table id="mainTable">
       <thead>
@@ -136,7 +172,6 @@ footer { text-align:center; padding:15px; color:#777; font-size:14px; }
         </tr>
       </thead>
       <tbody>
-        <!-- البيانات ستملأ ديناميكياً -->
       </tbody>
     </table>
   </div>

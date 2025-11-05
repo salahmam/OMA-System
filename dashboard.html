@@ -1,181 +1,90 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>لوحة إدارة المعهد - نظام أوما</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - نظام أوما</title>
+  <link rel="stylesheet" href="style.css">
 
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
-  authDomain: "oma-system-30813.firebaseapp.com",
-  projectId: "oma-system-30813",
-  storageBucket: "oma-system-30813.firebasestorage.app",
-  messagingSenderId: "905224657062",
-  appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
-  measurementId: "G-645066LLLP"
-};
+    // إعداد Firebase
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "YOUR_MEASUREMENT_ID"
+    };
 
-// تهيئة Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-// التحقق من المستخدم
-onAuthStateChanged(auth, user => {
-  if(user){
-    document.getElementById('userEmail').innerText = user.email;
-    loadDashboard();
-  } else {
-    window.location.href = "login.html";
-  }
-});
+    // تحقق من تسجيل الدخول
+    onAuthStateChanged(auth, user => {
+      if(user){
+        document.getElementById('userEmail').innerText = user.email;
+      } else {
+        window.location.href = "login.html";
+      }
+    });
 
-window.logout = async function(){
-  try {
-    await signOut(auth);
-    window.location.href = "login.html";
-  } catch(e){
-    console.error(e);
-  }
-}
+    // تسجيل الخروج
+    window.logout = async function(){
+      try { await signOut(auth); window.location.href = "login.html"; }
+      catch(e){ console.error(e); }
+    };
 
-// تحميل البيانات وعرضها
-async function loadDashboard(){
-  // الإحصاءات
-  const studentsSnapshot = await getDocs(collection(db, "students"));
-  const teachersSnapshot = await getDocs(collection(db, "teachers"));
-  const lessonsSnapshot = await getDocs(collection(db, "lessons"));
-  
-  document.getElementById('totalStudents').innerText = studentsSnapshot.size;
-  document.getElementById('totalTeachers').innerText = teachersSnapshot.size;
-  document.getElementById('lessonsToday').innerText = lessonsSnapshot.size;
+    // الانتقال إلى الصفحات
+    window.goToStudents = function(){ window.location.href = "students-v2.html"; }
+    window.goToTeachers = function(){ window.location.href = "teachers.html"; }
+    window.goToLessons = function(){ window.location.href = "lessons.html"; }
+  </script>
 
-  // المصروفات: جمع المدفوع لكل الطلاب
-  let totalPayments = 0;
-  studentsSnapshot.forEach(doc => {
-    const data = doc.data();
-    if(data.paid) totalPayments += Number(data.paid);
-  });
-  document.getElementById('totalPayments').innerText = totalPayments + " د.ع";
-
-  // ملء الجدول الرئيسي بالطلاب (كمثال)
-  const tbody = document.querySelector("#mainTable tbody");
-  tbody.innerHTML = ""; // مسح القديم
-  studentsSnapshot.forEach(doc => {
-    const data = doc.data();
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${data.name}</td>
-      <td>طالب</td>
-      <td>${data.grade || "-"}</td>
-      <td>${data.phone || "-"}</td>
-      <td>${data.paid || 0} / ${data.total || 0}</td>
-      <td>
-        <button onclick="editStudent('${doc.id}')">تعديل</button>
-        <button onclick="deleteStudent('${doc.id}')">حذف</button>
-      </td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
-// وظائف تجريبية للتعديل والحذف
-window.editStudent = function(id){
-  alert("فتح صفحة تعديل الطالب: " + id);
-}
-window.deleteStudent = function(id){
-  if(confirm("هل تريد حذف هذا الطالب؟")){
-    alert("سيتم حذف الطالب: " + id);
-  }
-}
-</script>
-
-<style>
-body { font-family:'Cairo',sans-serif; background:#f5f9ff; margin:0; color:#1a1a1a; direction:rtl; }
-header { background:#004aad; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
-header h1 { margin:0; font-size:22px; }
-header .logout-btn { background:#e53935; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; }
-header .logout-btn:hover { background:#c62828; }
-.container { max-width:1200px; margin:auto; padding:20px; }
-.dashboard-buttons { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin-bottom:30px; }
-.dashboard-buttons button { background:#004aad; color:white; border:none; padding:12px 25px; border-radius:5px; cursor:pointer; font-size:16px; transition:0.3s; }
-.dashboard-buttons button:hover { background:#00337a; }
-.stats { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin-bottom:30px; }
-.stat-box { flex:1 1 200px; background:#f1f3f6; border-radius:10px; padding:20px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.stat-box h3 { margin:0 0 10px 0; color:#004aad; }
-.quick-actions { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin-bottom:30px; }
-.quick-actions button { background:#ffcc33; color:#1a1a1a; border:none; padding:12px 25px; border-radius:5px; cursor:pointer; font-size:16px; transition:0.3s; }
-.quick-actions button:hover { background:#e6b800; }
-.search-filter { text-align:center; margin-bottom:20px; }
-.search-filter input { padding:8px; width:250px; border-radius:5px; border:1px solid #ccc; margin:0 5px; }
-.table-container { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; margin-bottom:30px; }
-th, td { padding:10px; border:1px solid #ddd; text-align:center; }
-th { background:#004aad; color:white; }
-footer { text-align:center; padding:15px; color:#777; font-size:14px; }
-</style>
+  <style>
+    body { font-family: 'Cairo', sans-serif; background: #f5f9ff; margin:0; color:#1a1a1a; direction:rtl; }
+    header { background:#004aad; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+    header h1{ margin:0; font-size:22px; }
+    .logout-btn{ background:#e53935; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; }
+    .logout-btn:hover{ background:#c62828; }
+    .container{ max-width:800px; margin:auto; padding:20px; }
+    .dashboard-buttons button{ width:100%; padding:15px; margin:10px 0; font-size:18px; cursor:pointer; border:none; border-radius:8px; transition:0.3s; }
+    .dashboard-buttons button:hover{ opacity:0.9; }
+    .students-btn{ background:#ffcc33; }
+    .teachers-btn{ background:#33b5ff; }
+    .lessons-btn{ background:#4caf50; }
+    .info{ margin-top:20px; font-size:18px; background:#f1f3f6; padding:15px; border-radius:8px; }
+    footer{ margin-top:30px; text-align:center; color:#777; font-size:14px; }
+  </style>
 </head>
 <body>
 
 <header>
-  <h1>لوحة إدارة المعهد - نظام أوما</h1>
+  <h1>لوحة التحكم - نظام أوما</h1>
   <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
 </header>
 
 <div class="container">
+  <p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
 
   <div class="dashboard-buttons">
-    <button onclick="window.location.href='students-v2.html'">📚 الطلاب</button>
-    <button onclick="window.location.href='teachers.html'">👩‍🏫 الأساتذة</button>
-    <button onclick="window.location.href='lessons.html'">🗓️ الدروس</button>
-    <button onclick="window.location.href='finance.html'">💰 المصروفات</button>
-    <button onclick="window.location.href='reports.html'">📊 التقارير</button>
-    <button onclick="window.location.href='settings.html'">⚙️ الإعدادات</button>
+    <button class="students-btn" onclick="goToStudents()">📚 الطلاب</button>
+    <button class="teachers-btn" onclick="goToTeachers()">👩‍🏫 الأساتذة</button>
+    <button class="lessons-btn" onclick="goToLessons()">📖 الدروس</button>
   </div>
 
-  <div class="stats">
-    <div class="stat-box"><h3>عدد الطلاب</h3><p id="totalStudents">0</p></div>
-    <div class="stat-box"><h3>عدد الأساتذة</h3><p id="totalTeachers">0</p></div>
-    <div class="stat-box"><h3>الدروس اليوم</h3><p id="lessonsToday">0</p></div>
-    <div class="stat-box"><h3>إجمالي المصروفات</h3><p id="totalPayments">0</p></div>
+  <div class="info">
+    <h3>📘 معلومات سريعة:</h3>
+    <ul>
+      <li>عدد الطلاب المسجلين</li>
+      <li>عدد الأساتذة</li>
+      <li>الدروس المجدولة اليوم</li>
+    </ul>
   </div>
-
-  <div class="quick-actions">
-    <button onclick="window.location.href='add-student.html'">➕ إضافة طالب</button>
-    <button onclick="window.location.href='add-teacher.html'">➕ إضافة أستاذ</button>
-    <button onclick="window.location.href='add-lesson.html'">➕ إضافة درس</button>
-  </div>
-
-  <div class="search-filter">
-    <input type="text" placeholder="بحث بالاسم أو الرقم" id="searchInput">
-    <input type="text" placeholder="فلترة حسب المرحلة" id="filterStage">
-    <button onclick="alert('يمكن ربط الفلترة بالجدول لاحقاً')">فلترة</button>
-  </div>
-
-  <div class="table-container">
-    <table id="mainTable">
-      <thead>
-        <tr>
-          <th>الاسم</th>
-          <th>النوع</th>
-          <th>المادة / الصف</th>
-          <th>الهاتف</th>
-          <th>الحالة المالية</th>
-          <th>الإجراءات</th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
-  </div>
-
 </div>
 
 <footer>

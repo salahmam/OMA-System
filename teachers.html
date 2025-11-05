@@ -61,6 +61,7 @@ window.loadTeachers = async function(){
     const paid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
     const remaining = total - paid;
     const groups = teacher.groups || [];
+    const stages = teacher.stages || [];
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -68,6 +69,7 @@ window.loadTeachers = async function(){
       <td>${teacher.subject}</td>
       <td>${teacher.phone || '-'}</td>
       <td>${groups.join(", ") || '-'}</td>
+      <td>${stages.join(", ") || '-'}</td>
       <td>${total.toLocaleString()}</td>
       <td>${paid.toLocaleString()}</td>
       <td>${remaining.toLocaleString()}</td>
@@ -76,6 +78,7 @@ window.loadTeachers = async function(){
         <button onclick="editTeacher('${docSnap.id}')">✏️ تعديل</button>
         <button onclick="deleteTeacher('${docSnap.id}')">🗑️ حذف</button>
         <button onclick="addGroup('${docSnap.id}')">➕ كروب</button>
+        <button onclick="addStage('${docSnap.id}')">➕ مرحلة</button>
         <button onclick="printTeacherForm('${docSnap.id}')">🖨️ طباعة الاستمارة</button>
       </td>
     `;
@@ -106,6 +109,18 @@ window.addGroup = async function(id){
   const groups = teacherSnap.data().groups || [];
   groups.push(groupName);
   await updateDoc(teacherRef, { groups });
+  window.loadTeachers();
+}
+
+// إضافة مرحلة جديدة
+window.addStage = async function(id){
+  const stageName = prompt("أدخل اسم المرحلة الجديدة:");
+  if(!stageName) return;
+  const teacherRef = doc(db, "teachers", id);
+  const teacherSnap = await getDoc(teacherRef);
+  const stages = teacherSnap.data().stages || [];
+  stages.push(stageName);
+  await updateDoc(teacherRef, { stages });
   window.loadTeachers();
 }
 
@@ -153,7 +168,8 @@ window.submitAddTeacher = async function(){
     phone,
     totalSalary: Number(totalSalary),
     payments: [],
-    groups
+    groups,
+    stages: []
   });
 
   window.loadTeachers();
@@ -164,7 +180,7 @@ window.submitAddTeacher = async function(){
   document.getElementById("teacherGroups").value = "";
 }
 
-// طباعة استمارة كاملة للأستاذ
+// طباعة استمارة احترافية للأستاذ
 window.printTeacherForm = async function(id){
   const teacherRef = doc(db, "teachers", id);
   const teacherSnap = await getDoc(teacherRef);
@@ -176,11 +192,14 @@ window.printTeacherForm = async function(id){
   const paid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const remaining = total - paid;
   const groups = teacher.groups || [];
+  const stages = teacher.stages || [];
 
   let paymentsRows = "";
   payments.forEach(p => {
     paymentsRows += `<tr><td>${p.date}</td><td>${Number(p.amount).toLocaleString()}</td></tr>`;
   });
+
+  let stagesRows = stages.length ? stages.map(s=>`<li>${s}</li>`).join('') : '<li>-</li>';
 
   const content = `
   <html>
@@ -192,24 +211,41 @@ window.printTeacherForm = async function(id){
       table { width:100%; border-collapse: collapse; margin-top:10px; }
       th, td { border:1px solid #000; padding:8px; text-align:center; }
       th { background:#004aad; color:white; }
+      .info-table { width:100%; margin-top:10px; border:1px solid #000; }
+      .info-table td { border:none; padding:5px; text-align:right; }
+      ul { padding-left:20px; margin:0; }
+      .footer { margin-top:40px; display:flex; justify-content: space-between; }
+      .footer div { text-align:center; width:45%; }
       @media print { @page { size:A4; margin:20mm; } }
     </style>
   </head>
   <body>
     <h2>استمارة الأستاذ</h2>
     <h3>${teacher.name}</h3>
-    <p><strong>المادة:</strong> ${teacher.subject}</p>
-    <p><strong>الهاتف:</strong> ${teacher.phone || '-'}</p>
-    <p><strong>الكروبات:</strong> ${groups.join(", ") || '-'}</p>
-    <p><strong>المبلغ الإجمالي:</strong> ${total.toLocaleString()}</p>
-    <p><strong>المدفوع:</strong> ${paid.toLocaleString()}</p>
-    <p><strong>المتبقي:</strong> ${remaining.toLocaleString()}</p>
+
+    <table class="info-table">
+      <tr><td><strong>المادة:</strong> ${teacher.subject}</td><td><strong>الهاتف:</strong> ${teacher.phone || '-'}</td></tr>
+      <tr><td><strong>المبلغ الإجمالي:</strong> ${total.toLocaleString()}</td><td><strong>المدفوع:</strong> ${paid.toLocaleString()}</td></tr>
+      <tr><td><strong>المتبقي:</strong> ${remaining.toLocaleString()}</td><td><strong>الكروبات:</strong> ${groups.join(", ") || '-'}</td></tr>
+      <tr><td colspan="2"><strong>المراحل:</strong> <ul>${stagesRows}</ul></td></tr>
+    </table>
 
     <h3>الدفعات</h3>
     <table>
       <tr><th>التاريخ</th><th>المبلغ</th></tr>
       ${paymentsRows || '<tr><td colspan="2">لا توجد دفعات</td></tr>'}
     </table>
+
+    <div class="footer">
+      <div>
+        <p>توقيع الأستاذ:</p>
+        <p>____________________</p>
+      </div>
+      <div>
+        <p>ختم المعهد:</p>
+        <p>____________________</p>
+      </div>
+    </div>
   </body>
   </html>
   `;
@@ -268,7 +304,7 @@ button:hover{opacity:0.8;}
 <table id="teachersTable">
 <thead>
 <tr>
-<th>الاسم</th><th>المادة</th><th>الهاتف</th><th>الكروبات</th>
+<th>الاسم</th><th>المادة</th><th>الهاتف</th><th>الكروبات</th><th>المراحل</th>
 <th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الإجراءات</th>
 </tr>
 </thead>

@@ -9,49 +9,60 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-// **Firebase Config للمشروع الثاني**
+// 🔗 إعدادات Firebase (استخدم نفس القيم من مشروعك)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+  authDomain: "oma-system-30813.firebaseapp.com",
+  projectId: "oma-system-30813",
+  storageBucket: "oma-system-30813.appspot.com",
+  messagingSenderId: "905224657062",
+  appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
+  measurementId: "G-645066LLLP"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+let currentUser = null;
 let editingLessonId = null;
 
-// تحقق من تسجيل الدخول
-onAuthStateChanged(auth, user => {
-  if(user){
+// ✅ تحقق من تسجيل الدخول
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
     document.getElementById('userEmail').innerText = user.email;
-    loadGrades();
-    loadGroups();
-    loadTeachers();
-    loadLessons();
+    await loadDataForInstitute(user.uid);
   } else {
     window.location.href = "login.html";
   }
 });
 
-window.logout = async function(){
-  try { await signOut(auth); window.location.href = "login.html"; }
-  catch(e){ console.error(e); }
+// 📤 تسجيل الخروج
+window.logout = async function () {
+  await signOut(auth);
+  window.location.href = "login.html";
+};
+
+// 🔽 تحميل كل البيانات الخاصة بالمعهد الحالي
+async function loadDataForInstitute(instituteId) {
+  await Promise.all([
+    loadGrades(instituteId),
+    loadGroups(instituteId),
+    loadTeachers(instituteId),
+    loadLessons(instituteId)
+  ]);
 }
 
-// تحميل المراحل
-async function loadGrades(){
-  const snapshot = await getDocs(collection(db,"grades"));
+// 🏫 تحميل المراحل الخاصة بالمعهد
+async function loadGrades(instituteId) {
+  const q = query(collection(db, "grades"), where("instituteId", "==", instituteId));
+  const snapshot = await getDocs(q);
   const select = document.getElementById('gradeSelect');
   select.innerHTML = "";
-  snapshot.docs.forEach(d=>{
+  snapshot.docs.forEach(d => {
     const opt = document.createElement("option");
     opt.value = d.data().name;
     opt.textContent = d.data().name;
@@ -59,12 +70,13 @@ async function loadGrades(){
   });
 }
 
-// تحميل الكروبات
-async function loadGroups(){
-  const snapshot = await getDocs(collection(db,"groups"));
+// 👥 تحميل الكروبات الخاصة بالمعهد
+async function loadGroups(instituteId) {
+  const q = query(collection(db, "groups"), where("instituteId", "==", instituteId));
+  const snapshot = await getDocs(q);
   const select = document.getElementById('groupSelect');
   select.innerHTML = "";
-  snapshot.docs.forEach(d=>{
+  snapshot.docs.forEach(d => {
     const opt = document.createElement("option");
     opt.value = d.data().name;
     opt.textContent = d.data().name;
@@ -72,12 +84,13 @@ async function loadGroups(){
   });
 }
 
-// تحميل الأساتذة
-async function loadTeachers(){
-  const snapshot = await getDocs(collection(db,"teachers"));
+// 👩‍🏫 تحميل الأساتذة الخاصة بالمعهد
+async function loadTeachers(instituteId) {
+  const q = query(collection(db, "teachers"), where("instituteId", "==", instituteId));
+  const snapshot = await getDocs(q);
   const select = document.getElementById('teacherSelect');
   select.innerHTML = "";
-  snapshot.docs.forEach(d=>{
+  snapshot.docs.forEach(d => {
     const opt = document.createElement("option");
     opt.value = d.data().name;
     opt.textContent = d.data().name;
@@ -85,8 +98,8 @@ async function loadTeachers(){
   });
 }
 
-// إضافة درس أو حفظ التعديل
-window.addLesson = async function(){
+// ➕ إضافة أو تعديل درس
+window.addLesson = async function () {
   const subject = document.getElementById('subjectInput').value;
   const teacher = document.getElementById('teacherSelect').value;
   const grade = document.getElementById('gradeSelect').value;
@@ -96,29 +109,37 @@ window.addLesson = async function(){
   const endTime = document.getElementById('endTime').value;
   const studentsCount = parseInt(document.getElementById('studentsCount').value) || 0;
 
-  if(!subject || !teacher || !grade || !group || !day || !startTime || !endTime){
+  if (!subject || !teacher || !grade || !group || !day || !startTime || !endTime) {
     alert("الرجاء ملء جميع الحقول");
     return;
   }
 
-  if(editingLessonId){
-    await updateDoc(doc(db,"lessons",editingLessonId),{subject,teacher,grade,group,day,startTime,endTime,studentsCount});
+  if (editingLessonId) {
+    await updateDoc(doc(db, "lessons", editingLessonId), {
+      subject, teacher, grade, group, day, startTime, endTime, studentsCount
+    });
+    alert("✅ تم تعديل الدرس بنجاح");
     editingLessonId = null;
     document.getElementById('addLessonBtn').textContent = "➕ إضافة درس";
   } else {
-    await addDoc(collection(db,"lessons"),{subject,teacher,grade,group,day,startTime,endTime,studentsCount});
+    await addDoc(collection(db, "lessons"), {
+      subject, teacher, grade, group, day, startTime, endTime, studentsCount,
+      instituteId: currentUser.uid  // 👈 ربط الدرس بالمعهد الحالي
+    });
+    alert("✅ تم إضافة الدرس بنجاح");
   }
 
   document.getElementById('lessonForm').reset();
-  loadLessons();
-}
+  loadLessons(currentUser.uid);
+};
 
-// تحميل وعرض الدروس
-async function loadLessons(){
-  const snapshot = await getDocs(collection(db,"lessons"));
+// 📋 تحميل الدروس الخاصة بالمعهد الحالي
+async function loadLessons(instituteId) {
+  const q = query(collection(db, "lessons"), where("instituteId", "==", instituteId));
+  const snapshot = await getDocs(q);
   const tbody = document.querySelector("#lessonsTable tbody");
   tbody.innerHTML = "";
-  snapshot.forEach(docSnap=>{
+  snapshot.forEach(docSnap => {
     const d = docSnap.data();
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -138,73 +159,44 @@ async function loadLessons(){
   });
 }
 
-// حذف درس
-window.deleteLesson = async function(id){
-  if(confirm("هل تريد حذف هذا الدرس؟")){
-    await deleteDoc(doc(db,"lessons",id));
-    loadLessons();
+// 🗑️ حذف درس
+window.deleteLesson = async function (id) {
+  if (confirm("هل تريد حذف هذا الدرس؟")) {
+    await deleteDoc(doc(db, "lessons", id));
+    loadLessons(currentUser.uid);
   }
-}
+};
 
-// تعبئة النموذج للتعديل
-window.editLesson = function(id){
-  const tbody = document.querySelector("#lessonsTable tbody");
-  let selectedRow;
-  tbody.querySelectorAll("tr").forEach(r=>{
-    if(r.querySelector("button").getAttribute("onclick").includes(id)){
-      selectedRow = r;
-    }
-  });
-  if(selectedRow){
-    document.getElementById('subjectInput').value = selectedRow.children[0].textContent;
-    document.getElementById('teacherSelect').value = selectedRow.children[1].textContent;
-    document.getElementById('gradeSelect').value = selectedRow.children[2].textContent;
-    document.getElementById('groupSelect').value = selectedRow.children[3].textContent;
-    document.getElementById('dayInput').value = selectedRow.children[4].textContent;
-    const times = selectedRow.children[5].textContent.split(" - ");
-    document.getElementById('startTime').value = times[0];
-    document.getElementById('endTime').value = times[1];
-    document.getElementById('studentsCount').value = selectedRow.children[6].textContent;
-    editingLessonId = id;
-    document.getElementById('addLessonBtn').textContent = "💾 حفظ التعديل";
-  }
-}
+// ✏️ تعديل درس
+window.editLesson = async function (id) {
+  const q = doc(db, "lessons", id);
+  const data = (await getDocs(collection(db, "lessons"))).docs.find(d => d.id === id)?.data();
+  if (!data) return;
 
-// طباعة الدروس
-window.printLessons = function(){
+  document.getElementById('subjectInput').value = data.subject;
+  document.getElementById('teacherSelect').value = data.teacher;
+  document.getElementById('gradeSelect').value = data.grade;
+  document.getElementById('groupSelect').value = data.group;
+  document.getElementById('dayInput').value = data.day;
+  document.getElementById('startTime').value = data.startTime;
+  document.getElementById('endTime').value = data.endTime;
+  document.getElementById('studentsCount').value = data.studentsCount;
+  editingLessonId = id;
+  document.getElementById('addLessonBtn').textContent = "💾 حفظ التعديل";
+};
+
+// 🖨️ الطباعة
+window.printLessons = function () {
   const rows = Array.from(document.querySelectorAll("#lessonsTable tbody tr"));
-  const printWindow = window.open('','طباعة الدروس','width=900,height=600');
+  const printWindow = window.open('', 'طباعة الدروس', 'width=900,height=600');
   printWindow.document.write('<html><head><title>طباعة الدروس</title>');
   printWindow.document.write('<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#004aad;color:white;}</style></head><body>');
   printWindow.document.write('<h2 style="text-align:center">جدول الدروس</h2>');
   printWindow.document.write('<table><tr><th>المادة</th><th>الأستاذ</th><th>المرحلة</th><th>الكروب</th><th>اليوم</th><th>الوقت</th><th>عدد الطلاب</th></tr>');
-  rows.forEach(r=>{ printWindow.document.write('<tr>'+r.innerHTML+'</tr>'); });
+  rows.forEach(r => { printWindow.document.write('<tr>' + r.innerHTML + '</tr>'); });
   printWindow.document.write('</table></body></html>');
   printWindow.document.close();
   printWindow.print();
-}
-
-// فلترة مباشرة
-const searchInput = document.getElementById('searchInput');
-const searchField = document.getElementById('searchField');
-searchInput.addEventListener('input', filterLessons);
-searchField.addEventListener('change', filterLessons);
-
-function filterLessons(){
-  const term = searchInput.value.toLowerCase();
-  const field = searchField.value;
-  const rows = document.querySelectorAll('#lessonsTable tbody tr');
-  rows.forEach(row=>{
-    let cellValue = '';
-    switch(field){
-      case 'subject': cellValue = row.children[0].textContent; break;
-      case 'teacher': cellValue = row.children[1].textContent; break;
-      case 'grade': cellValue = row.children[2].textContent; break;
-      case 'group': cellValue = row.children[3].textContent; break;
-      case 'day': cellValue = row.children[4].textContent; break;
-    }
-    row.style.display = cellValue.toLowerCase().includes(term) ? '' : 'none';
-  });
 }
 </script>
 
@@ -224,10 +216,6 @@ table{width:100%;border-collapse:collapse;margin-bottom:20px;}
 th,td{padding:10px;border:1px solid #ddd;text-align:center;}
 th{background:#004aad;color:white;}
 .print-section, .search-section{margin-bottom:20px;}
-.print-section select, .print-section input, .print-section button,
-.search-section select, .search-section input{padding:8px;margin:5px;border-radius:5px;border:1px solid #ccc;}
-.print-section button{background:#ffcc33;cursor:pointer;}
-.print-section button:hover{background:#e6b800;}
 footer{text-align:center;padding:15px;color:#777;font-size:14px;}
 </style>
 </head>
@@ -252,18 +240,6 @@ footer{text-align:center;padding:15px;color:#777;font-size:14px;}
 <input type="number" id="studentsCount" placeholder="عدد الطلاب">
 <button type="submit" id="addLessonBtn">➕ إضافة درس</button>
 </form>
-
-<div class="search-section">
-<label>بحث سريع:</label>
-<select id="searchField">
-<option value="subject">المادة</option>
-<option value="teacher">الأستاذ</option>
-<option value="grade">المرحلة</option>
-<option value="group">الكروب</option>
-<option value="day">اليوم</option>
-</select>
-<input type="text" id="searchInput" placeholder="اكتب هنا للبحث...">
-</div>
 
 <div class="print-section">
 <h3>طباعة الدروس</h3>

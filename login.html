@@ -1,35 +1,49 @@
-<form id="loginForm" onsubmit="event.preventDefault(); loginUser();">
-  <input type="email" id="emailInput" placeholder="البريد الإلكتروني" required>
-  <input type="password" id="passwordInput" placeholder="كلمة المرور" required>
-  <button type="submit">تسجيل الدخول</button>
-</form>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول - نظام أوما</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>تسجيل الدخول</h1>
+    <form id="loginForm" onsubmit="event.preventDefault(); loginUser();">
+      <input type="email" id="emailInput" placeholder="البريد الإلكتروني" required>
+      <input type="password" id="passwordInput" placeholder="كلمة المرور" required>
+      <button type="submit">تسجيل الدخول</button>
+    </form>
+  </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-async function loginUser(){
-  const email = document.getElementById("emailInput").value;
-  const password = document.getElementById("passwordInput").value;
+    async function loginUser() {
+      const email = document.getElementById("emailInput").value;
+      const password = document.getElementById("passwordInput").value;
 
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    // تسجيل الدخول ناجح
-    window.location.href = "dashboard.html";
-  } catch(error) {
-    alert("خطأ في تسجيل الدخول: " + error.message);
-  }
-}
-</script>
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // تسجيل الدخول ناجح → توجيه إلى لوحة التحكم
+        window.location.href = "dashboard.html";
+      } catch(error) {
+        alert("خطأ في تسجيل الدخول: " + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

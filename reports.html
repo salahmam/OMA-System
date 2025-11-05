@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التقارير - نظام أوما</title>
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: #f5f9ff;
+      margin: 0;
+      padding: 20px;
+      color: #1a1a1a;
+    }
+
+    header {
+      background: #004aad;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .reports-container {
+      max-width: 1200px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h2 { text-align: center; color: #004aad; margin-bottom: 20px; }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    label { font-weight: 600; margin-bottom:5px; display:block; }
+    input, select, button {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      cursor:pointer;
+      background-color: #004aad;
+      color:white;
+      border:none;
+      transition:0.3s;
+    }
+
+    button:hover { background-color: #00337a; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 10px;
+      border:1px solid #ccc;
+      text-align:center;
+    }
+
+    th {
+      background-color: #004aad;
+      color:white;
+    }
+
+    @media print {
+      body { background:white; }
+      .filters, button { display:none; }
+      table { page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>التقارير - نظام أوما</h1>
+</header>
+
+<div class="reports-container">
+
+  <!-- خيارات التصفية -->
+  <div class="filters">
+    <div>
+      <label>نوع التقرير:</label>
+      <select id="reportType">
+        <option value="students">الطلاب</option>
+        <option value="teachers">الأساتذة</option>
+        <option value="lessons">الدروس</option>
+        <option value="payments">الدفعات</option>
+      </select>
+    </div>
+
+    <div>
+      <label>من تاريخ:</label>
+      <input type="date" id="startDate">
+    </div>
+
+    <div>
+      <label>إلى تاريخ:</label>
+      <input type="date" id="endDate">
+    </div>
+
+    <div>
+      <label>المرحلة / الكروب:</label>
+      <select id="groupFilter">
+        <option value="all">الكل</option>
+      </select>
+    </div>
+
+    <div style="align-self:end;">
+      <button onclick="generateReport()">عرض التقرير</button>
+      <button onclick="printReport()">طباعة التقرير</button>
+    </div>
+  </div>
+
+  <!-- معاينة التقرير -->
+  <div class="report-preview">
+    <table id="reportTable">
+      <thead>
+        <tr>
+          <th>الاسم</th>
+          <th>المادة / الكروب</th>
+          <th>المرحلة</th>
+          <th>المدفوع</th>
+          <th>المتبقي</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- سيتم ملء البيانات هنا -->
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+  authDomain: "oma-system-30813.firebaseapp.com",
+  projectId: "oma-system-30813",
+  storageBucket: "oma-system-30813.appspot.com",
+  messagingSenderId: "905224657062",
+  appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
+  measurementId: "G-645066LLLP"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// حماية الصفحة
+onAuthStateChanged(auth, user => {
+  if(!user) window.location.href = "login.html";
+});
+
+// تحميل الكروبات/المراحل للفلتر
+async function loadGroups() {
+  const groupSelect = document.getElementById("groupFilter");
+  groupSelect.innerHTML = '<option value="all">الكل</option>';
+  const snapshot = await getDocs(collection(db,"students"));
+  const groups = new Set();
+  snapshot.forEach(doc=>{
+    const data = doc.data();
+    if(data.group) groups.add(data.group);
+  });
+  groups.forEach(g=>{
+    const option = document.createElement("option");
+    option.value = g; option.textContent = g;
+    groupSelect.appendChild(option);
+  });
+}
+
+loadGroups();
+
+// عرض التقرير
+async function generateReport() {
+  const type = document.getElementById("reportType").value;
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  const group = document.getElementById("groupFilter").value;
+  const tbody = document.getElementById("reportTable").querySelector("tbody");
+  tbody.innerHTML = "";
+
+  let col = "students";
+  if(type==="teachers") col="teachers";
+  if(type==="lessons") col="lessons";
+  if(type==="payments") col="payments";
+
+  const qSnapshot = await getDocs(collection(db,col));
+  qSnapshot.forEach(doc=>{
+    const data = doc.data();
+
+    // فلترة حسب الكروب
+    if(group !== "all" && data.group !== group) return;
+
+    // فلترة حسب التاريخ
+    if(startDate && data.date && data.date < startDate) return;
+    if(endDate && data.date && data.date > endDate) return;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${data.name || ""}</td>
+      <td>${data.subject || data.group || ""}</td>
+      <td>${data.stage || ""}</td>
+      <td>${data.paid || 0}</td>
+      <td>${data.remaining || 0}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// طباعة التقرير
+function printReport() {
+  window.print();
+}
+</script>
+
+</body>
+</html>

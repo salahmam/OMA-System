@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الدروس - نظام أوما</title>
+<link rel="stylesheet" href="style.css">
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+  authDomain: "oma-system-30813.firebaseapp.com",
+  projectId: "oma-system-30813",
+  storageBucket: "oma-system-30813.firebasestorage.app",
+  messagingSenderId: "905224657062",
+  appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
+  measurementId: "G-645066LLLP"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let editingLessonId = null;
+
+onAuthStateChanged(auth, user => {
+  if(user){
+    document.getElementById('userEmail').innerText = user.email;
+    loadTeachers();
+    loadGrades();
+    loadGroups();
+    loadLessons();
+  } else {
+    window.location.href = "login.html";
+  }
+});
+
+window.logout = async function(){
+  try { await signOut(auth); window.location.href = "login.html"; }
+  catch(e){ console.error(e); }
+}
+
+// تحميل بيانات الأساتذة
+let teachersList = [];
+async function loadTeachers(){
+  const snapshot = await getDocs(collection(db,"teachers"));
+  teachersList = snapshot.docs.map(d=>d.data().name);
+  const select = document.getElementById('teacherSelect');
+  select.innerHTML = "";
+  teachersList.forEach(t=>{ let opt = document.createElement("option"); opt.value=t; opt.textContent=t; select.appendChild(opt); });
+}
+
+// تحميل المراحل
+let gradesList = [];
+async function loadGrades(){
+  const snapshot = await getDocs(collection(db,"grades"));
+  gradesList = snapshot.docs.map(d=>d.data().name);
+  const select = document.getElementById('gradeSelect');
+  select.innerHTML = "";
+  gradesList.forEach(g=>{ let opt = document.createElement("option"); opt.value=g; opt.textContent=g; select.appendChild(opt); });
+}
+
+// تحميل الكروبات
+let groupsList = [];
+async function loadGroups(){
+  const snapshot = await getDocs(collection(db,"groups"));
+  groupsList = snapshot.docs.map(d=>d.data().name);
+  const select = document.getElementById('groupSelect');
+  select.innerHTML = "";
+  groupsList.forEach(g=>{ let opt = document.createElement("option"); opt.value=g; opt.textContent=g; select.appendChild(opt); });
+}
+
+// إضافة درس أو حفظ التعديل
+window.addLesson = async function(){
+  const subject = document.getElementById('subjectInput').value;
+  const teacher = document.getElementById('teacherSelect').value;
+  const grade = document.getElementById('gradeSelect').value;
+  const group = document.getElementById('groupSelect').value;
+  const day = document.getElementById('dayInput').value;
+  const startTime = document.getElementById('startTime').value;
+  const endTime = document.getElementById('endTime').value;
+  const studentsCount = Number(document.getElementById('studentsCount').value);
+
+  if(!subject || !teacher || !grade || !group || !day || !startTime || !endTime){
+    alert("الرجاء ملء جميع الحقول");
+    return;
+  }
+
+  if(editingLessonId){
+    await updateDoc(doc(db,"lessons",editingLessonId),{
+      subject, teacher, grade, group, day, startTime, endTime, studentsCount
+    });
+    alert("تم تعديل الدرس بنجاح");
+    editingLessonId = null;
+    document.getElementById('addLessonBtn').textContent = "➕ إضافة درس";
+  } else {
+    await addDoc(collection(db,"lessons"),{
+      subject, teacher, grade, group, day, startTime, endTime, studentsCount
+    });
+    alert("تم إضافة الدرس بنجاح");
+  }
+
+  document.getElementById('lessonForm').reset();
+  loadLessons();
+}
+
+// تحميل وعرض الدروس
+async function loadLessons(){
+  const snapshot = await getDocs(collection(db,"lessons"));
+  const tbody = document.querySelector("#lessonsTable tbody");
+  tbody.innerHTML = "";
+  snapshot.forEach(docSnap=>{
+    const d = docSnap.data();
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${d.subject}</td>
+      <td>${d.teacher}</td>
+      <td>${d.grade}</td>
+      <td>${d.group}</td>
+      <td>${d.day}</td>
+      <td>${d.startTime} - ${d.endTime}</td>
+      <td>${d.studentsCount}</td>
+      <td>
+        <button onclick="editLesson('${docSnap.id}')">تعديل</button>
+        <button onclick="deleteLesson('${docSnap.id}')">حذف</button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+// حذف درس
+window.deleteLesson = async function(id){
+  if(confirm("هل تريد حذف هذا الدرس؟")){
+    await deleteDoc(doc(db,"lessons",id));
+    loadLessons();
+  }
+}
+
+// تعبئة النموذج للتعديل
+window.editLesson = function(id){
+  const tbody = document.querySelector("#lessonsTable tbody");
+  let selectedRow;
+  tbody.querySelectorAll("tr").forEach(r=>{
+    if(r.querySelector("button").getAttribute("onclick").includes(id)){
+      selectedRow = r;
+    }
+  });
+  if(selectedRow){
+    document.getElementById('subjectInput').value = selectedRow.children[0].textContent;
+    document.getElementById('teacherSelect').value = selectedRow.children[1].textContent;
+    document.getElementById('gradeSelect').value = selectedRow.children[2].textContent;
+    document.getElementById('groupSelect').value = selectedRow.children[3].textContent;
+    document.getElementById('dayInput').value = selectedRow.children[4].textContent;
+    const times = selectedRow.children[5].textContent.split(" - ");
+    document.getElementById('startTime').value = times[0];
+    document.getElementById('endTime').value = times[1];
+    document.getElementById('studentsCount').value = selectedRow.children[6].textContent;
+    editingLessonId = id;
+    document.getElementById('addLessonBtn').textContent = "💾 حفظ التعديل";
+  }
+}
+
+// طباعة الدروس
+window.printLessons = function(){
+  const type = document.getElementById('printType').value;
+  const filterValue = document.getElementById('printFilter').value.toLowerCase();
+  let rows = Array.from(document.querySelectorAll("#lessonsTable tbody tr"));
+  let filteredRows = [];
+
+  if(type==="all"){ filteredRows = rows; }
+  else if(type==="group"){ filteredRows = rows.filter(r=>r.children[3].textContent.toLowerCase()===filterValue); }
+  else if(type==="teacher"){ filteredRows = rows.filter(r=>r.children[1].textContent.toLowerCase()===filterValue); }
+  else if(type==="student"){ filteredRows = rows.filter(r=>r.children[6].textContent.toLowerCase()===filterValue); }
+
+  let printWindow = window.open('','طباعة الدروس','width=800,height=600');
+  printWindow.document.write('<html><head><title>طباعة الدروس</title>');
+  printWindow.document.write('<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#004aad;color:white;}</style></head><body>');
+  printWindow.document.write('<h2 style="text-align:center">جدول الدروس</h2>');
+  printWindow.document.write('<table><tr><th>المادة</th><th>الأستاذ</th><th>المرحلة</th><th>الكروب</th><th>اليوم</th><th>الوقت</th><th>عدد الطلاب</th></tr>');
+  filteredRows.forEach(r=>{ printWindow.document.write('<tr>'+r.innerHTML+'</tr>'); });
+  printWindow.document.write('</table></body></html>');
+  printWindow.document.close();
+  printWindow.print();
+}
+
+// فلترة مباشرة
+const searchInput = document.getElementById('searchInput');
+const searchField = document.getElementById('searchField');
+
+searchInput.addEventListener('input', filterLessons);
+searchField.addEventListener('change', filterLessons);
+
+function filterLessons(){
+  const term = searchInput.value.toLowerCase();
+  const field = searchField.value;
+  const rows = document.querySelectorAll('#lessonsTable tbody tr');
+
+  rows.forEach(row=>{
+    let cellValue = '';
+    switch(field){
+      case 'subject': cellValue = row.children[0].textContent; break;
+      case 'teacher': cellValue = row.children[1].textContent; break;
+      case 'grade': cellValue = row.children[2].textContent; break;
+      case 'group': cellValue = row.children[3].textContent; break;
+      case 'day': cellValue = row.children[4].textContent; break;
+    }
+    row.style.display = cellValue.toLowerCase().includes(term) ? '' : 'none';
+  });
+}
+</script>
+
+<style>
+body{font-family:'Cairo',sans-serif;background:#f5f9ff;margin:0;color:#1a1a1a;direction:rtl;}
+header{background:#004aad;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:22px;}
+header .logout-btn{background:#e53935;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer;}
+header .logout-btn:hover{background:#c62828;}
+.container{max-width:1200px;margin:auto;padding:20px;}
+form{background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);margin-bottom:20px;}
+form input, form select{padding:8px;margin:5px;border-radius:5px;border:1px solid #ccc;}
+form button{background:#004aad;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;transition:0.3s;}
+form button:hover{background:#00337a;}
+.table-container{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+th,td{padding:10px;border:1px solid #ddd;text-align:center;}
+th{background:#004aad;color:white;}
+.print-section, .search-section{margin-bottom:20px;}
+.print-section select, .print-section input, .print-section button,
+.search-section select, .search-section input{padding:8px;margin:5px;border-radius:5px;border:1px solid #ccc;}
+.print-section button{background:#ffcc33;cursor:pointer;}
+.print-section button:hover{background:#e6b800;}
+footer{text-align:center;padding:15px;color:#777;font-size:14px;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>إدارة الدروس - نظام أوما</h1>
+<button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+</header>
+
+<div class="container">
+
+<form id="lessonForm" onsubmit="event.preventDefault(); addLesson();">
+<h3>إضافة درس جديد / تعديل درس</h3>
+<input type="text" id="subjectInput" placeholder="المادة">
+<select id="teacherSelect"></select>
+<select id="gradeSelect"></select>
+<select id="groupSelect"></select>
+<input type="text" id="dayInput" placeholder="اليوم">
+<input type="time" id="startTime">
+<input type="time" id="endTime">
+<input type="number" id="studentsCount" placeholder="عدد الطلاب">
+<button type="submit" id="addLessonBtn">➕ إضافة درس</button>
+</form>
+
+<div class="search-section">
+<label>بحث سريع:</label>
+<select id="searchField">
+<option value="subject">المادة</option>
+<option value="teacher">الأستاذ</option>
+<option value="grade">المرحلة</option>
+<option value="group">الكروب</option>
+<option value="day">اليوم</option>
+</select>
+<input type="text" id="searchInput" placeholder="اكتب هنا للبحث...">
+</div>
+
+<div class="print-section">
+<h3>طباعة الجدول</h3>
+<select id="printType">
+<option value="all">كامل الجدول</option>
+<option value="group">جدول كروب</option>
+<option value="teacher">جدول أستاذ</option>
+<option value="student">جدول طالب</option>
+</select>
+<input type="text" id="printFilter" placeholder="أدخل الاسم أو الكروب">
+<button onclick="printLessons()">🖨️ طباعة</button>
+</div>
+
+<div class="table-container">
+<table id="lessonsTable">
+<thead>
+<tr>
+<th>المادة</th>
+<th>الأستاذ</th>
+<th>المرحلة</th>
+<th>الكروب</th>
+<th>اليوم</th>
+<th>الوقت</th>
+<th>عدد الطلاب</th>
+<th>الإجراءات</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+</div>
+
+<footer>
+<p>© 2025 نظام أوما - جميع الحقوق محفوظة</p>
+</footer>
+
+</body>
+</html>

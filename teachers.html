@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>إدارة الأساتذة - نظام أوما</title>
+<link rel="stylesheet" href="style.css">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-// إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
   authDomain: "oma-system-30813.firebaseapp.com",
@@ -25,300 +25,253 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// التحقق من تسجيل الدخول
-onAuthStateChanged(auth, (user) => {
+let editingTeacherId = null;
+
+onAuthStateChanged(auth, user => {
   if(user){
     document.getElementById('userEmail').innerText = user.email;
-    window.loadTeachers();
+    loadGrades();
+    loadGroups();
+    loadTeachers();
   } else {
-    alert("يجب تسجيل الدخول أولاً");
     window.location.href = "login.html";
   }
 });
 
-// تسجيل الخروج
 window.logout = async function(){
-  try{
-    await signOut(auth);
-    alert("تم تسجيل الخروج بنجاح");
-    window.location.href = "login.html";
-  } catch(error){
-    console.error(error);
+  try { await signOut(auth); window.location.href = "login.html"; }
+  catch(e){ console.error(e); }
+}
+
+// تحميل المراحل
+let gradesList = [];
+async function loadGrades(){
+  const snapshot = await getDocs(collection(db,"grades"));
+  gradesList = snapshot.docs.map(d=>d.data().name);
+  const select = document.getElementById('gradeSelect');
+  select.innerHTML = "";
+  gradesList.forEach(g=>{ let opt = document.createElement("option"); opt.value=g; opt.textContent=g; select.appendChild(opt); });
+}
+
+// تحميل الكروبات
+let groupsList = [];
+async function loadGroups(){
+  const snapshot = await getDocs(collection(db,"groups"));
+  groupsList = snapshot.docs.map(d=>d.data().name);
+  const select = document.getElementById('groupSelect');
+  select.innerHTML = "";
+  groupsList.forEach(g=>{ let opt = document.createElement("option"); opt.value=g; opt.textContent=g; select.appendChild(opt); });
+}
+
+// إضافة أستاذ أو حفظ التعديل
+window.addTeacher = async function(){
+  const name = document.getElementById('nameInput').value;
+  const subject = document.getElementById('subjectInput').value;
+  const grade = document.getElementById('gradeSelect').value;
+  const group = document.getElementById('groupSelect').value;
+  const phone = document.getElementById('phoneInput').value;
+  const paid = parseFloat(document.getElementById('paidInput').value) || 0;
+  const total = parseFloat(document.getElementById('totalInput').value) || 0;
+  const remaining = total - paid;
+
+  if(!name || !subject || !grade || !group){
+    alert("الرجاء ملء جميع الحقول");
+    return;
   }
-};
+
+  if(editingTeacherId){
+    await updateDoc(doc(db,"teachers",editingTeacherId),{name,subject,grade,group,phone,paid,total,remaining});
+    editingTeacherId = null;
+    document.getElementById('addTeacherBtn').textContent = "➕ إضافة أستاذ";
+  } else {
+    await addDoc(collection(db,"teachers"),{name,subject,grade,group,phone,paid,total,remaining});
+  }
+
+  document.getElementById('teacherForm').reset();
+  loadTeachers();
+}
 
 // تحميل وعرض الأساتذة
-window.loadTeachers = async function(){
-  const teachersCol = collection(db, "teachers");
-  const snapshot = await getDocs(teachersCol);
+async function loadTeachers(){
+  const snapshot = await getDocs(collection(db,"teachers"));
   const tbody = document.querySelector("#teachersTable tbody");
   tbody.innerHTML = "";
-
-  snapshot.forEach(docSnap => {
-    const teacher = docSnap.data();
-    const total = Number(teacher.totalSalary) || 0;
-    const payments = teacher.payments || [];
-    const paid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    const remaining = total - paid;
-    const groups = teacher.groups || [];
-    const stages = teacher.stages || [];
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${teacher.name}</td>
-      <td>${teacher.subject}</td>
-      <td>${teacher.phone || '-'}</td>
-      <td>${groups.join(", ") || '-'}</td>
-      <td>${stages.join(", ") || '-'}</td>
-      <td>${total.toLocaleString()}</td>
-      <td>${paid.toLocaleString()}</td>
-      <td>${remaining.toLocaleString()}</td>
+  snapshot.forEach(docSnap=>{
+    const d = docSnap.data();
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${d.name}</td>
+      <td>${d.subject}</td>
+      <td>${d.grade}</td>
+      <td>${d.group}</td>
+      <td>${d.phone || ''}</td>
+      <td>${d.total}</td>
+      <td>${d.paid}</td>
+      <td>${d.remaining}</td>
       <td>
-        <button onclick="addPayment('${docSnap.id}')">➕ دفعة</button>
-        <button onclick="editTeacher('${docSnap.id}')">✏️ تعديل</button>
-        <button onclick="deleteTeacher('${docSnap.id}')">🗑️ حذف</button>
-        <button onclick="addGroup('${docSnap.id}')">➕ كروب</button>
-        <button onclick="addStage('${docSnap.id}')">➕ مرحلة</button>
-        <button onclick="printTeacherForm('${docSnap.id}')">🖨️ طباعة</button>
+        <button onclick="editTeacher('${docSnap.id}')">تعديل</button>
+        <button onclick="deleteTeacher('${docSnap.id}')">حذف</button>
       </td>
     `;
-    tbody.appendChild(tr);
+    tbody.appendChild(row);
   });
-}
-
-// إضافة دفعة جديدة
-window.addPayment = async function(id){
-  const amount = parseFloat(prompt("أدخل مبلغ الدفعة:"));
-  if(!amount || isNaN(amount)) return alert("مبلغ غير صالح");
-
-  const date = new Date().toISOString().split('T')[0];
-  const teacherRef = doc(db, "teachers", id);
-  const teacherSnap = await getDoc(teacherRef);
-  const payments = teacherSnap.data().payments || [];
-  payments.push({ amount: Number(amount), date });
-  await updateDoc(teacherRef, { payments });
-  window.loadTeachers();
-}
-
-// إضافة كروب جديد
-window.addGroup = async function(id){
-  const groupName = prompt("أدخل اسم الكروب الجديد:");
-  if(!groupName) return;
-  const teacherRef = doc(db, "teachers", id);
-  const teacherSnap = await getDoc(teacherRef);
-  const groups = teacherSnap.data().groups || [];
-  groups.push(groupName);
-  await updateDoc(teacherRef, { groups });
-  window.loadTeachers();
-}
-
-// إضافة مرحلة جديدة
-window.addStage = async function(id){
-  const stageName = prompt("أدخل اسم المرحلة الجديدة:");
-  if(!stageName) return;
-  const teacherRef = doc(db, "teachers", id);
-  const teacherSnap = await getDoc(teacherRef);
-  const stages = teacherSnap.data().stages || [];
-  stages.push(stageName);
-  await updateDoc(teacherRef, { stages });
-  window.loadTeachers();
-}
-
-// تعديل أستاذ
-window.editTeacher = async function(id){
-  const teacherRef = doc(db, "teachers", id);
-  const teacherSnap = await getDoc(teacherRef);
-  if(teacherSnap.exists()){
-    const teacher = teacherSnap.data();
-    const newName = prompt("الاسم:", teacher.name);
-    const newSubject = prompt("المادة:", teacher.subject);
-    const newPhone = prompt("رقم الهاتف:", teacher.phone || '');
-    const newTotal = parseFloat(prompt("إجمالي المستحق:", teacher.totalSalary));
-    const newStage = prompt("المرحلة:", (teacher.stages || []).join(","));
-    if(newName && newSubject && !isNaN(newTotal)){
-      await updateDoc(teacherRef, { 
-        name:newName, subject:newSubject, phone:newPhone, 
-        totalSalary:Number(newTotal), stages: newStage ? newStage.split(",").map(s=>s.trim()) : []
-      });
-      window.loadTeachers();
-    }
-  }
 }
 
 // حذف أستاذ
 window.deleteTeacher = async function(id){
-  if(confirm("هل أنت متأكد من حذف هذا الأستاذ؟")){
-    await deleteDoc(doc(db, "teachers", id));
-    window.loadTeachers();
+  if(confirm("هل تريد حذف هذا الأستاذ؟")){
+    await deleteDoc(doc(db,"teachers",id));
+    loadTeachers();
   }
 }
 
-// إضافة أستاذ جديد
-window.submitAddTeacher = async function(){
-  const name = document.getElementById("teacherName").value.trim();
-  const subject = document.getElementById("teacherSubject").value.trim();
-  const phone = document.getElementById("teacherPhone").value.trim();
-  const totalSalary = parseFloat(document.getElementById("teacherSalary").value);
-  const groupsInput = document.getElementById("teacherGroups").value.trim();
-  const stageInput = document.getElementById("teacherStage").value.trim();
-  const groups = groupsInput ? groupsInput.split(",").map(g=>g.trim()) : [];
-  const stages = stageInput ? stageInput.split(",").map(s=>s.trim()) : [];
-
-  if(!name || !subject || !phone || isNaN(totalSalary)){
-    return alert("الرجاء إدخال جميع البيانات بشكل صحيح");
-  }
-
-  await addDoc(collection(db, "teachers"), {
-    name,
-    subject,
-    phone,
-    totalSalary: Number(totalSalary),
-    payments: [],
-    groups,
-    stages
+// تعبئة النموذج للتعديل
+window.editTeacher = function(id){
+  const tbody = document.querySelector("#teachersTable tbody");
+  let selectedRow;
+  tbody.querySelectorAll("tr").forEach(r=>{
+    if(r.querySelector("button").getAttribute("onclick").includes(id)){
+      selectedRow = r;
+    }
   });
-
-  window.loadTeachers();
-  document.getElementById("teacherName").value = "";
-  document.getElementById("teacherSubject").value = "";
-  document.getElementById("teacherPhone").value = "";
-  document.getElementById("teacherSalary").value = "";
-  document.getElementById("teacherGroups").value = "";
-  document.getElementById("teacherStage").value = "";
+  if(selectedRow){
+    document.getElementById('nameInput').value = selectedRow.children[0].textContent;
+    document.getElementById('subjectInput').value = selectedRow.children[1].textContent;
+    document.getElementById('gradeSelect').value = selectedRow.children[2].textContent;
+    document.getElementById('groupSelect').value = selectedRow.children[3].textContent;
+    document.getElementById('phoneInput').value = selectedRow.children[4].textContent;
+    document.getElementById('totalInput').value = selectedRow.children[5].textContent;
+    document.getElementById('paidInput').value = selectedRow.children[6].textContent;
+    editingTeacherId = id;
+    document.getElementById('addTeacherBtn').textContent = "💾 حفظ التعديل";
+  }
 }
 
-// طباعة استمارة احترافية
-window.printTeacherForm = async function(id){
-  const teacherRef = doc(db, "teachers", id);
-  const teacherSnap = await getDoc(teacherRef);
-  if(!teacherSnap.exists()) return alert("المعلم غير موجود");
+// طباعة الأساتذة
+window.printTeachers = function(){
+  let rows = Array.from(document.querySelectorAll("#teachersTable tbody tr"));
+  let printWindow = window.open('','طباعة الأساتذة','width=900,height=600');
+  printWindow.document.write('<html><head><title>طباعة الأساتذة</title>');
+  printWindow.document.write('<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#004aad;color:white;}</style></head><body>');
+  printWindow.document.write('<h2 style="text-align:center">جدول الأساتذة</h2>');
+  printWindow.document.write('<table><tr><th>الاسم</th><th>المادة</th><th>المرحلة</th><th>الكروب</th><th>رقم الهاتف</th><th>المبلغ الكلي</th><th>المدفوع</th><th>المتبقي</th></tr>');
+  rows.forEach(r=>{ printWindow.document.write('<tr>'+r.innerHTML+'</tr>'); });
+  printWindow.document.write('</table></body></html>');
+  printWindow.document.close();
+  printWindow.print();
+}
 
-  const teacher = teacherSnap.data();
-  const total = Number(teacher.totalSalary) || 0;
-  const payments = teacher.payments || [];
-  const paid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-  const remaining = total - paid;
-  const groups = teacher.groups || [];
-  const stages = teacher.stages || [];
+// فلترة مباشرة
+const searchInput = document.getElementById('searchInput');
+const searchField = document.getElementById('searchField');
 
-  let paymentsRows = "";
-  payments.forEach(p => {
-    paymentsRows += `<tr><td>${p.date}</td><td>${Number(p.amount).toLocaleString()}</td></tr>`;
+searchInput.addEventListener('input', filterTeachers);
+searchField.addEventListener('change', filterTeachers);
+
+function filterTeachers(){
+  const term = searchInput.value.toLowerCase();
+  const field = searchField.value;
+  const rows = document.querySelectorAll('#teachersTable tbody tr');
+
+  rows.forEach(row=>{
+    let cellValue = '';
+    switch(field){
+      case 'name': cellValue = row.children[0].textContent; break;
+      case 'subject': cellValue = row.children[1].textContent; break;
+      case 'grade': cellValue = row.children[2].textContent; break;
+      case 'group': cellValue = row.children[3].textContent; break;
+      case 'phone': cellValue = row.children[4].textContent; break;
+    }
+    row.style.display = cellValue.toLowerCase().includes(term) ? '' : 'none';
   });
-
-  let groupsHtml = groups.length ? groups.map(g=>`<li>${g}</li>`).join('') : '<li>-</li>';
-  let stagesHtml = stages.length ? stages.map(s=>`<li>${s}</li>`).join('') : '<li>-</li>';
-
-  const content = `
-  <html>
-  <head>
-    <title>استمارة الأستاذ ${teacher.name}</title>
-    <style>
-      body { font-family:'Cairo', sans-serif; direction:rtl; margin:20px; }
-      h2,h3 { text-align:center; }
-      .top-section { display:flex; justify-content:space-between; margin-top:20px; }
-      .box { border:1px solid #000; padding:10px; border-radius:5px; }
-      table { width:100%; border-collapse: collapse; margin-top:20px; }
-      th, td { border:1px solid #000; padding:8px; text-align:center; }
-      th { background:#004aad; color:white; }
-      .footer { margin-top:50px; display:flex; justify-content: space-between; }
-      .footer div { text-align:center; width:45%; }
-      @media print { @page { size:A4; margin:20mm; } }
-    </style>
-  </head>
-  <body>
-    <h2>استمارة الأستاذ</h2>
-    <div class="top-section">
-      <div class="box" style="width:48%;">
-        <p><strong>الاسم:</strong> ${teacher.name}</p>
-        <p><strong>المادة:</strong> ${teacher.subject}</p>
-        <p><strong>الهاتف:</strong> ${teacher.phone || '-'}</p>
-        <p><strong>المراحل:</strong><ul>${stagesHtml}</ul></p>
-      </div>
-      <div class="box" style="width:48%;">
-        <p><strong>المبلغ الإجمالي:</strong> ${total.toLocaleString()}</p>
-        <p><strong>المدفوع:</strong> ${paid.toLocaleString()}</p>
-        <p><strong>المتبقي:</strong> ${remaining.toLocaleString()}</p>
-      </div>
-    </div>
-
-    <h3>الكروبات</h3>
-    <ul>${groupsHtml}</ul>
-
-    <h3>الدفعات</h3>
-    <table>
-      <tr><th>التاريخ</th><th>المبلغ</th></tr>
-      ${paymentsRows || '<tr><td colspan="2">لا توجد دفعات</td></tr>'}
-    </table>
-
-    <div class="footer">
-      <div>
-        <p>توقيع الأستاذ:</p>
-        <p>____________________</p>
-      </div>
-      <div>
-        <p>ختم المعهد:</p>
-        <p>____________________</p>
-      </div>
-    </div>
-  </body>
-  </html>
-  `;
-  const newWin = window.open("");
-  newWin.document.write(content);
-  newWin.document.close();
-  newWin.focus();
-  newWin.print();
 }
 </script>
 
 <style>
-body { font-family:'Cairo',sans-serif; background:linear-gradient(180deg,#fff,#eaf1ff); margin:0; color:#1a1a1a; direction:rtl; }
-header { background:#004aad; color:white; padding:15px; text-align:center; }
-.container { max-width:1100px; margin:auto; padding:20px; background:#fff; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
-table { width:100%; border-collapse:collapse; margin-top:20px; }
-th, td { padding:10px; border:1px solid #ddd; text-align:center; }
-th { background:#004aad; color:white; }
-button { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; margin:2px; transition:0.3s; }
-button:hover{opacity:0.8;}
-.logout-btn{background:#e53935;color:white;margin-bottom:10px;}
-#addTeacherForm{background:#f1f3f6;padding:15px;border-radius:8px;margin-top:15px; display:block;}
-#addTeacherForm input{padding:5px;margin:5px 0;width:100%;}
-#addTeacherForm button{margin-top:5px;}
+body{font-family:'Cairo',sans-serif;background:#f5f9ff;margin:0;color:#1a1a1a;direction:rtl;}
+header{background:#004aad;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:22px;}
+header .logout-btn{background:#e53935;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer;}
+header .logout-btn:hover{background:#c62828;}
+.container{max-width:1200px;margin:auto;padding:20px;}
+form{background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);margin-bottom:20px;}
+form input, form select{padding:8px;margin:5px;border-radius:5px;border:1px solid #ccc;}
+form button{background:#004aad;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;transition:0.3s;}
+form button:hover{background:#00337a;}
+.table-container{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+th,td{padding:10px;border:1px solid #ddd;text-align:center;}
+th{background:#004aad;color:white;}
+.print-section, .search-section{margin-bottom:20px;}
+.print-section select, .print-section input, .print-section button,
+.search-section select, .search-section input{padding:8px;margin:5px;border-radius:5px;border:1px solid #ccc;}
+.print-section button{background:#ffcc33;cursor:pointer;}
+.print-section button:hover{background:#e6b800;}
+footer{text-align:center;padding:15px;color:#777;font-size:14px;}
 </style>
 </head>
 <body>
 
-<header><h1>إدارة الأساتذة - نظام أوما</h1></header>
+<header>
+<h1>إدارة الأساتذة - نظام أوما</h1>
+<button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+</header>
 
 <div class="container">
-<p>مرحباً، <span id="userEmail">جاري التحميل...</span></p>
-<button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
 
-<!-- نموذج إضافة أستاذ -->
-<div id="addTeacherForm">
-<h3>إضافة أستاذ جديد</h3>
-<label>الاسم: <input type="text" id="teacherName"></label><br>
-<label>المادة: <input type="text" id="teacherSubject"></label><br>
-<label>الهاتف: <input type="text" id="teacherPhone"></label><br>
-<label>المبلغ الإجمالي: <input type="number" id="teacherSalary"></label><br>
-<label>الكروبات (افصل بينها بفاصلة): <input type="text" id="teacherGroups"></label><br>
-<label>المرحلة (افصل بين مراحل متعددة بفاصلة): <input type="text" id="teacherStage"></label><br>
-<button onclick="submitAddTeacher()">إضافة</button>
+<form id="teacherForm" onsubmit="event.preventDefault(); addTeacher();">
+<h3>إضافة أستاذ جديد / تعديل أستاذ</h3>
+<input type="text" id="nameInput" placeholder="الاسم">
+<input type="text" id="subjectInput" placeholder="المادة">
+<select id="gradeSelect"></select>
+<select id="groupSelect"></select>
+<input type="text" id="phoneInput" placeholder="رقم الهاتف">
+<input type="number" id="totalInput" placeholder="المبلغ الكلي">
+<input type="number" id="paidInput" placeholder="المدفوع">
+<button type="submit" id="addTeacherBtn">➕ إضافة أستاذ</button>
+</form>
+
+<div class="search-section">
+<label>بحث سريع:</label>
+<select id="searchField">
+<option value="name">الاسم</option>
+<option value="subject">المادة</option>
+<option value="grade">المرحلة</option>
+<option value="group">الكروب</option>
+<option value="phone">رقم الهاتف</option>
+</select>
+<input type="text" id="searchInput" placeholder="اكتب هنا للبحث...">
 </div>
 
+<div class="print-section">
+<h3>طباعة الأساتذة</h3>
+<button onclick="printTeachers()">🖨️ طباعة كامل الجدول</button>
+</div>
+
+<div class="table-container">
 <table id="teachersTable">
 <thead>
 <tr>
-<th>الاسم</th><th>المادة</th><th>الهاتف</th><th>الكروبات</th><th>المراحل</th>
-<th>المبلغ الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الإجراءات</th>
+<th>الاسم</th>
+<th>المادة</th>
+<th>المرحلة</th>
+<th>الكروب</th>
+<th>رقم الهاتف</th>
+<th>المبلغ الكلي</th>
+<th>المدفوع</th>
+<th>المتبقي</th>
+<th>الإجراءات</th>
 </tr>
 </thead>
-<tbody>
-<!-- سيتم ملؤه ديناميكياً -->
-</tbody>
+<tbody></tbody>
 </table>
 </div>
+
+</div>
+
+<footer>
+<p>© 2025 نظام أوما - جميع الحقوق محفوظة</p>
+</footer>
 
 </body>
 </html>

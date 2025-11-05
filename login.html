@@ -9,8 +9,8 @@
   <style>
     body {
       font-family: 'Cairo', sans-serif;
-      background: linear-gradient(180deg, #eaf1ff, #ffffff);
       margin: 0;
+      background: linear-gradient(180deg, #eaf1ff, #ffffff);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -29,9 +29,9 @@
     }
 
     .login-container h1 {
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       color: #004aad;
-      font-size: 24px;
+      font-size: 26px;
     }
 
     .login-container input {
@@ -79,11 +79,13 @@
   <div class="login-container">
     <h1>نظام أوما</h1>
     <p>سجل الدخول للمتابعة</p>
+
     <form id="loginForm" onsubmit="event.preventDefault(); loginUser();">
       <input type="email" id="emailInput" placeholder="البريد الإلكتروني" required>
       <input type="password" id="passwordInput" placeholder="كلمة المرور" required>
       <button type="submit">تسجيل الدخول</button>
     </form>
+
     <div class="login-footer">
       © 2025 نظام أوما - جميع الحقوق محفوظة
     </div>
@@ -93,6 +95,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
+    // إعدادات مشروع Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
       authDomain: "oma-system-30813.firebaseapp.com",
@@ -106,15 +109,16 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    // دالة تسجيل الدخول
     async function loginUser() {
       const email = document.getElementById("emailInput").value;
       const password = document.getElementById("passwordInput").value;
 
       try {
         await signInWithEmailAndPassword(auth, email, password);
-        // بعد تسجيل الدخول الناجح → لوحة التحكم
+        // بعد تسجيل الدخول → لوحة التحكم
         window.location.href = "dashboard.html";
-      } catch (error) {
+      } catch(error) {
         alert("خطأ في تسجيل الدخول: " + error.message);
       }
     }
